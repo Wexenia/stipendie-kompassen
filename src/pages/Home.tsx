@@ -1,138 +1,234 @@
+import { Link, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { loadDrafts, loadProfile, loadSavedIds } from "@/lib/storage";
+import { SCHOLARSHIPS } from "@/data/scholarships";
+import { matchAll } from "@/lib/matching";
+import { StudentProfile, SavedDraft } from "@/types/profile";
+import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
-import { GraduationCap, Sparkles, Search, FileText, ArrowRight, Shield, CheckCircle2 } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Search, FilePlus, FileText, ChevronRight, Sparkles, Calendar, Bell, GraduationCap } from "lucide-react";
+import { CompactScholarshipRow } from "@/components/ScholarshipRow";
 
-const benefits = [
-  {
-    icon: Search,
-    title: "Samlad stipendieinformation",
-    desc: "Sök och utforska relevanta svenska stipendier på ett ställe – tydligt och överskådligt.",
-  },
-  {
-    icon: Sparkles,
-    title: "Personliga matchningar",
-    desc: "Vår algoritm matchar din profil med stipendier och visar alltid varför de passar dig.",
-  },
-  {
-    icon: FileText,
-    title: "Hjälp med ansökan",
-    desc: "Generera ett personligt utkast till din ansökan – redo att redigera och skicka in.",
-  },
-];
+function profileCompleteness(p: StudentProfile | null): number {
+  if (!p) return 0;
+  const fields = [p.namn, p.universitet, p.program, p.amnesomrade, p.termin, p.studieort, p.hemort, p.engagemang, p.intressen, p.syfte, p.bakgrund];
+  const filled = fields.filter((f) => f && f.trim().length > 0).length;
+  return Math.round((filled / fields.length) * 100);
+}
 
 export default function Home() {
-  return (
-    <div>
-      {/* Hero */}
-      <section className="bg-hero-gradient">
-        <div className="container py-20 md:py-28">
-          <div className="max-w-3xl mx-auto text-center animate-fade-in">
-            <span className="inline-flex items-center gap-2 rounded-full bg-background border border-border px-4 py-1.5 text-xs font-medium text-muted-foreground shadow-soft">
-              <GraduationCap className="h-3.5 w-3.5 text-primary" />
-              För svenska universitetsstudenter
-            </span>
-            <h1 className="mt-6 text-4xl md:text-6xl font-bold tracking-tight text-foreground">
-              Hitta stipendier som passar{" "}
-              <span className="bg-gradient-to-r from-primary to-primary-glow bg-clip-text text-transparent">
-                just dig
-              </span>
-            </h1>
-            <p className="mt-6 text-lg text-muted-foreground leading-relaxed max-w-2xl mx-auto">
-              Skapa en profil, matchas med relevanta stipendier och få hjälp att komma igång med din ansökan.
-            </p>
-            <div className="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
-              <Button asChild size="lg" className="rounded-xl shadow-glow">
-                <Link to="/profil">
-                  Skapa stipendieprofil <ArrowRight className="ml-1 h-4 w-4" />
-                </Link>
-              </Button>
-              <Button asChild size="lg" variant="outline" className="rounded-xl">
-                <Link to="/stipendier">Utforska stipendier</Link>
-              </Button>
-            </div>
+  const navigate = useNavigate();
+  const [profile, setProfile] = useState<StudentProfile | null>(null);
+  const [savedIds, setSavedIds] = useState<string[]>([]);
+  const [drafts, setDrafts] = useState<SavedDraft[]>([]);
 
-            <div className="mt-10 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-muted-foreground">
-              <span className="flex items-center gap-1.5"><CheckCircle2 className="h-4 w-4 text-success" /> Gratis prototyp</span>
-              <span className="flex items-center gap-1.5"><CheckCircle2 className="h-4 w-4 text-success" /> Inget konto krävs</span>
-              <span className="flex items-center gap-1.5"><CheckCircle2 className="h-4 w-4 text-success" /> Transparent matchning</span>
-            </div>
+  useEffect(() => {
+    const refresh = () => {
+      setProfile(loadProfile());
+      setSavedIds(loadSavedIds());
+      setDrafts(loadDrafts());
+    };
+    refresh();
+    window.addEventListener("stipendia:update", refresh);
+    return () => window.removeEventListener("stipendia:update", refresh);
+  }, []);
+
+  const completeness = profileCompleteness(profile);
+  const matches = profile ? matchAll(profile, SCHOLARSHIPS).slice(0, 3) : [];
+  const upcoming = [...SCHOLARSHIPS]
+    .filter((s) => savedIds.includes(s.id) || drafts.some((d) => d.scholarshipId === s.id))
+    .sort((a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime())
+    .slice(0, 3);
+  const fallbackUpcoming = upcoming.length === 0
+    ? [...SCHOLARSHIPS].sort((a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime()).slice(0, 3)
+    : upcoming;
+
+  return (
+    <div className="px-4 pt-5 space-y-4">
+      {/* Greeting header */}
+      <header className="flex items-start justify-between gap-3">
+        <div>
+          <h1 className="text-[22px] font-bold leading-tight">Hej{profile?.namn ? `, ${profile.namn.split(" ")[0]}` : ""}! 👋</h1>
+          <p className="text-[13px] text-muted-foreground mt-0.5">Redo att hitta stipendier som passar dig?</p>
+        </div>
+        <button
+          aria-label="Notiser"
+          className="h-10 w-10 rounded-full bg-secondary flex items-center justify-center text-foreground shrink-0"
+        >
+          <Bell className="h-[18px] w-[18px]" />
+        </button>
+      </header>
+
+      {/* Profile completion card */}
+      <div className="rounded-3xl bg-warm-gradient text-primary-foreground p-4 shadow-glow">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="text-[11px] uppercase tracking-wider opacity-80 font-semibold">Din profil</p>
+            <p className="font-bold text-lg leading-tight mt-0.5">Profil {completeness}% klar</p>
+          </div>
+          <div className="h-12 w-12 rounded-2xl bg-white/15 flex items-center justify-center backdrop-blur-sm">
+            <GraduationCap className="h-6 w-6" />
           </div>
         </div>
-      </section>
-
-      {/* Benefits */}
-      <section className="container py-16 md:py-24">
-        <div className="text-center max-w-2xl mx-auto mb-12">
-          <h2 className="text-3xl md:text-4xl font-bold">Allt du behöver på ett ställe</h2>
-          <p className="mt-3 text-muted-foreground">
-            Stipendia samlar information, matchar och hjälper dig att skriva – så att du kan fokusera på dina studier.
-          </p>
+        <div className="mt-3">
+          <Progress value={completeness} className="h-1.5 bg-white/20 [&>div]:bg-white" />
         </div>
-        <div className="grid gap-6 md:grid-cols-3">
-          {benefits.map((b) => (
-            <Card key={b.title} className="rounded-2xl border-border/70 shadow-soft hover:shadow-card transition-shadow">
-              <CardContent className="p-6">
-                <span className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-primary-soft text-primary">
-                  <b.icon className="h-5 w-5" />
-                </span>
-                <h3 className="mt-4 font-semibold text-lg">{b.title}</h3>
-                <p className="mt-2 text-sm text-muted-foreground leading-relaxed">{b.desc}</p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </section>
+        <Button
+          onClick={() => navigate("/profil")}
+          className="mt-3 w-full rounded-xl bg-white text-primary hover:bg-white/90 font-semibold h-10"
+        >
+          {completeness === 0 ? "Skapa profil" : completeness === 100 ? "Uppdatera profil" : "Fortsätt skapa profil"}
+        </Button>
+      </div>
 
-      {/* How it works */}
-      <section className="container pb-16 md:pb-24">
-        <Card className="rounded-3xl border-border/70 bg-secondary/40 overflow-hidden">
-          <CardContent className="p-8 md:p-12">
-            <div className="grid md:grid-cols-2 gap-8 items-center">
-              <div>
-                <h2 className="text-3xl font-bold">Så fungerar det</h2>
-                <ol className="mt-6 space-y-4">
-                  {[
-                    "Skapa din stipendieprofil på ett par minuter",
-                    "Få en lista med stipendier sorterade efter matchningsgrad",
-                    "Läs detaljer och se exakt varför du matchar",
-                    "Generera ett ansökningsutkast – redigera och skicka in",
-                  ].map((t, i) => (
-                    <li key={i} className="flex gap-3">
-                      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-semibold">
-                        {i + 1}
-                      </span>
-                      <span className="text-foreground">{t}</span>
-                    </li>
-                  ))}
-                </ol>
-                <Button asChild className="mt-8 rounded-xl">
-                  <Link to="/profil">Kom igång</Link>
-                </Button>
-              </div>
-              <div className="rounded-2xl bg-background border border-border p-6 shadow-soft">
-                <div className="flex items-start gap-3">
-                  <Shield className="h-5 w-5 text-primary mt-0.5" />
-                  <div>
-                    <p className="font-medium text-foreground">Trygg och transparent</p>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Din profil sparas endast lokalt i din webbläsare. Du ser alltid varför ett stipendium rekommenderas.
+      {/* Quick actions */}
+      <div className="grid grid-cols-3 gap-2">
+        <QuickAction icon={Search} label="Sök stipendier" to="/stipendier" />
+        <QuickAction icon={FilePlus} label="Skapa profil" to="/profil" />
+        <QuickAction icon={FileText} label="Mina utkast" to="/ansokningar" />
+      </div>
+
+      {/* Best matches */}
+      <SectionCard
+        icon={Sparkles}
+        title="Bästa matchningar"
+        action={profile ? { label: "Se alla", to: "/matchningar" } : undefined}
+      >
+        {profile ? (
+          matches.length > 0 ? (
+            <div className="-mx-1.5">
+              {matches.map((m) => (
+                <CompactScholarshipRow key={m.scholarship.id} scholarship={m.scholarship} match={m} />
+              ))}
+            </div>
+          ) : (
+            <Empty text="Inga matchningar än." />
+          )
+        ) : (
+          <Empty text="Skapa din profil för personliga matchningar." cta="Kom igång" to="/profil" />
+        )}
+      </SectionCard>
+
+      {/* Deadlines */}
+      <SectionCard icon={Calendar} title="Kommande deadlines">
+        <ul className="space-y-1.5">
+          {fallbackUpcoming.map((s) => {
+            const d = new Date(s.deadline);
+            const days = Math.max(0, Math.ceil((d.getTime() - Date.now()) / 86400000));
+            return (
+              <li key={s.id}>
+                <Link
+                  to={`/stipendier/${s.id}`}
+                  className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-secondary/60"
+                >
+                  <div className="h-10 w-10 rounded-xl bg-accent-soft text-accent flex flex-col items-center justify-center leading-none">
+                    <span className="text-[10px] font-semibold uppercase">{d.toLocaleDateString("sv-SE", { month: "short" }).slice(0, 3)}</span>
+                    <span className="text-sm font-bold">{d.getDate()}</span>
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold text-sm truncate">{s.name}</p>
+                    <p className="text-[11px] text-muted-foreground">Om {days} dagar</p>
+                  </div>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      </SectionCard>
+
+      {/* Drafts */}
+      <SectionCard
+        icon={FileText}
+        title="Ansökningsutkast"
+        action={drafts.length > 0 ? { label: "Se alla", to: "/ansokningar" } : undefined}
+      >
+        {drafts.length === 0 ? (
+          <Empty text="Du har inga utkast ännu." cta="Bläddra stipendier" to="/stipendier" />
+        ) : (
+          <ul className="space-y-1.5">
+            {drafts.slice(0, 3).map((d) => (
+              <li key={d.scholarshipId}>
+                <Link
+                  to={`/utkast/${d.scholarshipId}`}
+                  className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-secondary/60"
+                >
+                  <div className="h-10 w-10 rounded-xl bg-primary-soft text-primary flex items-center justify-center">
+                    <FileText className="h-4 w-4" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold text-sm truncate">{d.scholarshipName}</p>
+                    <p className="text-[11px] text-muted-foreground">
+                      Uppdaterad {new Date(d.updatedAt).toLocaleDateString("sv-SE")}
                     </p>
                   </div>
-                </div>
-                <div className="mt-6 space-y-3">
-                  {["Studieintyg", "CV", "Personligt brev"].map((d) => (
-                    <div key={d} className="flex items-center justify-between rounded-xl bg-secondary/60 px-4 py-3">
-                      <span className="text-sm font-medium">{d}</span>
-                      <CheckCircle2 className="h-4 w-4 text-success" />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </section>
+                  <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </SectionCard>
+
+      <p className="text-[10px] text-center text-muted-foreground/80 px-4 py-2">
+        Din profil sparas endast lokalt i din webbläsare.
+      </p>
+    </div>
+  );
+}
+
+function QuickAction({ icon: Icon, label, to }: { icon: any; label: string; to: string }) {
+  return (
+    <Link
+      to={to}
+      className="flex flex-col items-center justify-center gap-1.5 p-3 bg-card rounded-2xl border border-border/60 shadow-soft hover:shadow-card active:scale-95 transition-all"
+    >
+      <span className="h-9 w-9 rounded-xl bg-primary-soft text-primary flex items-center justify-center">
+        <Icon className="h-[18px] w-[18px]" />
+      </span>
+      <span className="text-[11px] font-medium text-center leading-tight">{label}</span>
+    </Link>
+  );
+}
+
+function SectionCard({
+  icon: Icon,
+  title,
+  action,
+  children,
+}: {
+  icon: any;
+  title: string;
+  action?: { label: string; to: string };
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="bg-card rounded-3xl border border-border/60 shadow-soft p-3">
+      <div className="flex items-center justify-between px-1.5 pt-0.5 pb-2">
+        <h2 className="font-semibold text-sm flex items-center gap-1.5">
+          <Icon className="h-4 w-4 text-primary" />
+          {title}
+        </h2>
+        {action && (
+          <Link to={action.to} className="text-[11px] font-semibold text-primary flex items-center">
+            {action.label} <ChevronRight className="h-3 w-3" />
+          </Link>
+        )}
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function Empty({ text, cta, to }: { text: string; cta?: string; to?: string }) {
+  return (
+    <div className="px-2 py-4 text-center">
+      <p className="text-xs text-muted-foreground">{text}</p>
+      {cta && to && (
+        <Link to={to} className="inline-block mt-2 text-xs font-semibold text-primary">
+          {cta} →
+        </Link>
+      )}
     </div>
   );
 }
