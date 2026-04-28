@@ -1,18 +1,18 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Card, CardContent } from "@/components/ui/card";
+import AppScreen from "@/components/layout/AppScreen";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
-import { ArrowLeft, ArrowRight, CheckCircle2, Shield } from "lucide-react";
+import { ArrowRight, CheckCircle2, Shield } from "lucide-react";
 import { EMPTY_PROFILE, StudentProfile } from "@/types/profile";
 import { loadProfile, saveProfile } from "@/lib/storage";
 import { toast } from "sonner";
 
-const STEPS = ["Om dig", "Studier", "Engagemang & syfte", "Dokument"];
+const STEPS = ["Om dig", "Studier", "Engagemang", "Dokument"];
 
 export default function Profile() {
   const navigate = useNavigate();
@@ -25,17 +25,13 @@ export default function Profile() {
 
   const validate = (): boolean => {
     const e: Record<string, string> = {};
-    if (step === 0) {
-      if (!profile.namn.trim()) e.namn = "Namn krävs";
-    }
+    if (step === 0 && !profile.namn.trim()) e.namn = "Namn krävs";
     if (step === 1) {
       if (!profile.universitet.trim()) e.universitet = "Lärosäte krävs";
       if (!profile.program.trim()) e.program = "Program krävs";
       if (!profile.amnesomrade.trim()) e.amnesomrade = "Ämnesområde krävs";
     }
-    if (step === 2) {
-      if (!profile.syfte.trim()) e.syfte = "Beskriv vad stipendiet ska användas till";
-    }
+    if (step === 2 && !profile.syfte.trim()) e.syfte = "Beskriv vad stipendiet ska användas till";
     setErrors(e);
     return Object.keys(e).length === 0;
   };
@@ -54,24 +50,15 @@ export default function Profile() {
   const progress = ((step + 1) / STEPS.length) * 100;
 
   return (
-    <div className="container py-10 md:py-14 max-w-3xl">
-      <div className="mb-8">
-        <h1 className="text-3xl md:text-4xl font-bold">Skapa din stipendieprofil</h1>
-        <p className="mt-2 text-muted-foreground">
-          Svara på några frågor så matchar vi dig med relevanta stipendier.
-        </p>
-      </div>
+    <AppScreen
+      title="Skapa profil"
+      subtitle={`Steg ${step + 1} av ${STEPS.length} · ${STEPS[step]}`}
+      back={step > 0}
+    >
+      <div className="space-y-4">
+        <Progress value={progress} className="h-1.5" />
 
-      <div className="mb-6">
-        <div className="flex items-center justify-between text-sm mb-2">
-          <span className="font-medium">Steg {step + 1} av {STEPS.length} · {STEPS[step]}</span>
-          <span className="text-muted-foreground">{Math.round(progress)}%</span>
-        </div>
-        <Progress value={progress} className="h-2" />
-      </div>
-
-      <Card className="rounded-2xl shadow-soft">
-        <CardContent className="p-6 md:p-8 space-y-5">
+        <div className="space-y-3.5">
           {step === 0 && (
             <>
               <Field label="Namn *" error={errors.namn}>
@@ -83,8 +70,8 @@ export default function Profile() {
               <Field label="Kön (valfritt)">
                 <Input value={profile.kon ?? ""} onChange={(e) => update("kon", e.target.value)} placeholder="t.ex. Kvinna, Man, Annat" />
               </Field>
-              <Field label="Ekonomisk situation (valfritt)" hint="Beskriv kort om du har begränsad ekonomi – relevant för behovsprövade stipendier.">
-                <Textarea rows={2} value={profile.ekonomi ?? ""} onChange={(e) => update("ekonomi", e.target.value)} placeholder="t.ex. Begränsad ekonomi, försörjer mig själv" />
+              <Field label="Ekonomisk situation (valfritt)" hint="Relevant för behovsprövade stipendier.">
+                <Textarea rows={2} value={profile.ekonomi ?? ""} onChange={(e) => update("ekonomi", e.target.value)} placeholder="t.ex. Begränsad ekonomi" />
               </Field>
             </>
           )}
@@ -97,11 +84,11 @@ export default function Profile() {
               <Field label="Program/utbildning *" error={errors.program}>
                 <Input value={profile.program} onChange={(e) => update("program", e.target.value)} placeholder="t.ex. Civilingenjör Datateknik" />
               </Field>
-              <Field label="Ämnesområde *" error={errors.amnesomrade} hint="t.ex. Teknik, Medicin, Ekonomi, Humaniora">
+              <Field label="Ämnesområde *" error={errors.amnesomrade} hint="Teknik, Medicin, Ekonomi, Humaniora ...">
                 <Input value={profile.amnesomrade} onChange={(e) => update("amnesomrade", e.target.value)} placeholder="t.ex. Teknik" />
               </Field>
-              <div className="grid sm:grid-cols-2 gap-4">
-                <Field label="Termin / årskurs">
+              <div className="grid grid-cols-2 gap-3">
+                <Field label="Termin">
                   <Input value={profile.termin} onChange={(e) => update("termin", e.target.value)} placeholder="t.ex. Termin 5" />
                 </Field>
                 <Field label="Studieort">
@@ -113,81 +100,76 @@ export default function Profile() {
 
           {step === 2 && (
             <>
-              <Field label="Föreningsengagemang eller ideellt arbete">
-                <Textarea rows={3} value={profile.engagemang} onChange={(e) => update("engagemang", e.target.value)} placeholder="t.ex. Styrelsemedlem i kårsektion, volontär i Röda Korset" />
+              <Field label="Föreningsengagemang / ideellt arbete">
+                <Textarea rows={3} value={profile.engagemang} onChange={(e) => update("engagemang", e.target.value)} placeholder="t.ex. Styrelsemedlem i kårsektion" />
               </Field>
               <Field label="Intressen">
-                <Textarea rows={2} value={profile.intressen} onChange={(e) => update("intressen", e.target.value)} placeholder="t.ex. AI, hållbarhet, jämställdhet i tekniken" />
+                <Textarea rows={2} value={profile.intressen} onChange={(e) => update("intressen", e.target.value)} placeholder="t.ex. AI, hållbarhet" />
               </Field>
               <Field label="Vad ska stipendiet användas till? *" error={errors.syfte}>
-                <Textarea rows={3} value={profile.syfte} onChange={(e) => update("syfte", e.target.value)} placeholder="t.ex. Utbytesstudier, examensarbete, kurslitteratur" />
+                <Textarea rows={3} value={profile.syfte} onChange={(e) => update("syfte", e.target.value)} placeholder="t.ex. Utbytesstudier, examensarbete" />
               </Field>
               <Field label="Kort personlig bakgrund">
-                <Textarea rows={4} value={profile.bakgrund} onChange={(e) => update("bakgrund", e.target.value)} placeholder="Berätta kort om din väg till studierna och vad som driver dig." />
+                <Textarea rows={3} value={profile.bakgrund} onChange={(e) => update("bakgrund", e.target.value)} placeholder="Berätta kort om din väg till studierna." />
               </Field>
             </>
           )}
 
           {step === 3 && (
             <>
-              <p className="text-sm text-muted-foreground">
-                Markera de dokument du redan har. Detta hjälper oss att visa vad du behöver komplettera för olika ansökningar.
-              </p>
-              <div className="space-y-3">
+              <p className="text-xs text-muted-foreground">Markera de dokument du redan har.</p>
+              <div className="space-y-2">
                 {[
                   { k: "studieintyg", label: "Studieintyg" },
                   { k: "cv", label: "CV" },
                   { k: "personligtBrev", label: "Personligt brev" },
                   { k: "rekommendationsbrev", label: "Rekommendationsbrev" },
                 ].map(({ k, label }) => (
-                  <label key={k} className="flex items-center gap-3 rounded-xl border border-border bg-secondary/40 p-4 cursor-pointer hover:bg-secondary transition-colors">
+                  <label key={k} className="flex items-center gap-3 rounded-2xl border border-border bg-secondary/40 p-3 cursor-pointer hover:bg-secondary transition-colors">
                     <Checkbox
                       checked={(profile.dokument as any)[k]}
                       onCheckedChange={(v) => update("dokument", { ...profile.dokument, [k]: !!v })}
                     />
-                    <span className="font-medium">{label}</span>
+                    <span className="text-sm font-medium">{label}</span>
                   </label>
                 ))}
               </div>
-
-              <div className="flex items-start gap-3 rounded-xl bg-primary-soft border border-primary/15 p-4 text-sm">
-                <Shield className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+              <div className="flex items-start gap-2 rounded-2xl bg-primary-soft border border-primary/15 p-3 text-xs">
+                <Shield className="h-4 w-4 text-primary shrink-0 mt-0.5" />
                 <p className="text-foreground/80">
-                  Din profil sparas endast lokalt i din webbläsare. Dela inte känsliga personuppgifter om det inte behövs.
+                  Din profil sparas endast lokalt. Dela inte känsliga personuppgifter om det inte behövs.
                 </p>
               </div>
             </>
           )}
+        </div>
 
-          <div className="flex justify-between pt-4 border-t border-border">
-            <Button variant="ghost" onClick={() => setStep((s) => Math.max(0, s - 1))} disabled={step === 0}>
-              <ArrowLeft className="mr-1 h-4 w-4" /> Tillbaka
+        <div className="flex gap-2 pt-2 sticky bottom-0 bg-app/0">
+          {step > 0 && (
+            <Button variant="outline" onClick={() => setStep((s) => s - 1)} className="rounded-xl flex-1">
+              Tillbaka
             </Button>
-            <Button onClick={next} className="rounded-lg">
-              {step === STEPS.length - 1 ? (
-                <>
-                  <CheckCircle2 className="mr-1 h-4 w-4" /> Spara & matcha
-                </>
-              ) : (
-                <>
-                  Nästa <ArrowRight className="ml-1 h-4 w-4" />
-                </>
-              )}
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    </div>
+          )}
+          <Button onClick={next} className="rounded-xl flex-1 shadow-glow">
+            {step === STEPS.length - 1 ? (
+              <><CheckCircle2 className="mr-1 h-4 w-4" /> Spara & matcha</>
+            ) : (
+              <>Nästa <ArrowRight className="ml-1 h-4 w-4" /></>
+            )}
+          </Button>
+        </div>
+      </div>
+    </AppScreen>
   );
 }
 
 function Field({ label, hint, error, children }: { label: string; hint?: string; error?: string; children: React.ReactNode }) {
   return (
-    <div className="space-y-1.5">
-      <Label className="text-sm font-medium">{label}</Label>
+    <div className="space-y-1">
+      <Label className="text-xs font-semibold text-foreground/80">{label}</Label>
       {children}
-      {hint && !error && <p className="text-xs text-muted-foreground">{hint}</p>}
-      {error && <p className="text-xs text-destructive">{error}</p>}
+      {hint && !error && <p className="text-[11px] text-muted-foreground">{hint}</p>}
+      {error && <p className="text-[11px] text-destructive">{error}</p>}
     </div>
   );
 }

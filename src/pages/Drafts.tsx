@@ -2,11 +2,9 @@ import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { loadDrafts, loadProfile, loadSavedIds, deleteDraft } from "@/lib/storage";
 import { SCHOLARSHIPS } from "@/data/scholarships";
-import { matchAll } from "@/lib/matching";
-import { Card, CardContent } from "@/components/ui/card";
+import AppScreen from "@/components/layout/AppScreen";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { FileText, User, Bookmark, Calendar, AlertCircle, Trash2, ChevronRight } from "lucide-react";
+import { FileText, Bookmark, Calendar, AlertCircle, Trash2, ChevronRight } from "lucide-react";
 import { StudentProfile, SavedDraft } from "@/types/profile";
 
 export default function Drafts() {
@@ -26,11 +24,10 @@ export default function Drafts() {
   }, []);
 
   const savedScholarships = SCHOLARSHIPS.filter((s) => savedIds.includes(s.id));
-
   const upcoming = [...SCHOLARSHIPS]
     .filter((s) => savedIds.includes(s.id) || drafts.some((d) => d.scholarshipId === s.id))
     .sort((a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime())
-    .slice(0, 4);
+    .slice(0, 5);
 
   const missingDocs: string[] = [];
   if (profile) {
@@ -41,164 +38,147 @@ export default function Drafts() {
     if (!d.rekommendationsbrev) missingDocs.push("Rekommendationsbrev");
   }
 
-  const topMatch = profile ? matchAll(profile, SCHOLARSHIPS)[0] : null;
-
   return (
-    <div className="container py-10 md:py-14">
-      <div className="mb-8">
-        <h1 className="text-3xl md:text-4xl font-bold">Mina ansökningar</h1>
-        <p className="mt-2 text-muted-foreground">Översikt över din profil, sparade stipendier och pågående utkast.</p>
-      </div>
-
-      <div className="grid lg:grid-cols-3 gap-6">
-        {/* Profile */}
-        <Card className="rounded-2xl shadow-soft lg:col-span-1">
-          <CardContent className="p-6">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground"><User className="h-4 w-4" /> Min profil</div>
-            {profile ? (
-              <>
-                <h3 className="mt-2 font-semibold text-lg">{profile.namn || "Ingen profil"}</h3>
-                <p className="text-sm text-muted-foreground">{profile.program}</p>
-                <p className="text-sm text-muted-foreground">{profile.universitet}</p>
-                <div className="mt-3 flex flex-wrap gap-1.5">
-                  {profile.amnesomrade && <Badge variant="secondary" className="rounded-full">{profile.amnesomrade}</Badge>}
-                  {profile.studieort && <Badge variant="secondary" className="rounded-full">{profile.studieort}</Badge>}
-                  {profile.termin && <Badge variant="secondary" className="rounded-full">{profile.termin}</Badge>}
-                </div>
-                <Button asChild variant="outline" size="sm" className="mt-4 rounded-lg w-full">
-                  <Link to="/profil">Redigera profil</Link>
-                </Button>
-              </>
-            ) : (
-              <EmptyInline label="Du har ingen profil ännu." cta="Skapa profil" to="/profil" />
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Top match teaser */}
-        <Card className="rounded-2xl shadow-soft lg:col-span-2 bg-primary-gradient text-primary-foreground">
-          <CardContent className="p-6">
-            <div className="flex items-center gap-2 text-sm opacity-90">Bästa matchning</div>
-            {topMatch ? (
-              <>
-                <h3 className="mt-1 text-2xl font-bold">{topMatch.scholarship.name}</h3>
-                <p className="opacity-90 mt-1 text-sm">{topMatch.explanation}</p>
-                <div className="mt-4 flex items-center gap-3">
-                  <span className="text-3xl font-bold">{topMatch.score}%</span>
-                  <Button asChild variant="secondary" className="rounded-lg ml-auto">
-                    <Link to={`/stipendier/${topMatch.scholarship.id}`}>Visa <ChevronRight className="h-4 w-4 ml-1" /></Link>
+    <AppScreen title="Mina ansökningar" subtitle="Sparade stipendier & utkast">
+      <div className="space-y-3">
+        {/* Drafts */}
+        <Section icon={FileText} title="Sparade utkast" count={drafts.length}>
+          {drafts.length === 0 ? (
+            <Empty text="Inga utkast sparade ännu." cta="Bläddra stipendier" to="/stipendier" />
+          ) : (
+            <ul className="space-y-1.5">
+              {drafts.map((d) => (
+                <li key={d.scholarshipId} className="flex items-center gap-2 p-2.5 rounded-xl hover:bg-secondary/60">
+                  <div className="h-10 w-10 rounded-xl bg-primary-soft text-primary flex items-center justify-center shrink-0">
+                    <FileText className="h-4 w-4" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold text-sm truncate">{d.scholarshipName}</p>
+                    <p className="text-[11px] text-muted-foreground">
+                      {new Date(d.updatedAt).toLocaleDateString("sv-SE")}
+                    </p>
+                  </div>
+                  <Button asChild size="sm" variant="ghost" className="rounded-lg h-8 px-2 text-xs">
+                    <Link to={`/utkast/${d.scholarshipId}`}>Öppna</Link>
                   </Button>
-                </div>
-              </>
-            ) : (
-              <p className="mt-2 opacity-90">Skapa profil för att se din bästa matchning.</p>
-            )}
-          </CardContent>
-        </Card>
+                  <button
+                    onClick={() => deleteDraft(d.scholarshipId)}
+                    className="h-8 w-8 flex items-center justify-center rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                    aria-label="Ta bort"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Section>
 
         {/* Saved */}
-        <Card className="rounded-2xl shadow-soft lg:col-span-2">
-          <CardContent className="p-6">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3"><Bookmark className="h-4 w-4" /> Sparade stipendier</div>
-            {savedScholarships.length === 0 ? (
-              <EmptyInline label="Du har inte sparat några stipendier." cta="Utforska stipendier" to="/stipendier" />
-            ) : (
-              <ul className="divide-y divide-border">
-                {savedScholarships.map((s) => (
-                  <li key={s.id} className="py-3 flex items-center justify-between gap-3">
-                    <div className="min-w-0">
-                      <Link to={`/stipendier/${s.id}`} className="font-medium hover:text-primary truncate block">{s.name}</Link>
-                      <p className="text-xs text-muted-foreground">{s.amount.toLocaleString("sv-SE")} kr · {new Date(s.deadline).toLocaleDateString("sv-SE")}</p>
+        <Section icon={Bookmark} title="Sparade stipendier" count={savedScholarships.length}>
+          {savedScholarships.length === 0 ? (
+            <Empty text="Du har inte sparat några stipendier." cta="Utforska" to="/stipendier" />
+          ) : (
+            <ul className="space-y-1">
+              {savedScholarships.map((s) => (
+                <li key={s.id}>
+                  <Link to={`/stipendier/${s.id}`} className="flex items-center gap-2 p-2.5 rounded-xl hover:bg-secondary/60">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-semibold text-sm truncate">{s.name}</p>
+                      <p className="text-[11px] text-muted-foreground">
+                        {s.amount.toLocaleString("sv-SE")} kr · {new Date(s.deadline).toLocaleDateString("sv-SE")}
+                      </p>
                     </div>
-                    <Button asChild size="sm" variant="outline" className="rounded-lg shrink-0">
-                      <Link to={`/utkast/${s.id}`}>Skriv utkast</Link>
-                    </Button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </CardContent>
-        </Card>
+                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </Section>
 
         {/* Deadlines */}
-        <Card className="rounded-2xl shadow-soft">
-          <CardContent className="p-6">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3"><Calendar className="h-4 w-4" /> Kommande deadlines</div>
-            {upcoming.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Spara stipendier för att se deadlines här.</p>
-            ) : (
-              <ul className="space-y-2">
-                {upcoming.map((s) => (
-                  <li key={s.id} className="flex items-center justify-between rounded-lg bg-secondary/50 px-3 py-2">
-                    <Link to={`/stipendier/${s.id}`} className="text-sm font-medium hover:text-primary truncate pr-2">{s.name}</Link>
-                    <span className="text-xs text-muted-foreground shrink-0">{new Date(s.deadline).toLocaleDateString("sv-SE")}</span>
+        <Section icon={Calendar} title="Kommande deadlines">
+          {upcoming.length === 0 ? (
+            <p className="text-xs text-muted-foreground px-2 py-2">Spara stipendier för att se deadlines här.</p>
+          ) : (
+            <ul className="space-y-1.5">
+              {upcoming.map((s) => {
+                const d = new Date(s.deadline);
+                return (
+                  <li key={s.id}>
+                    <Link to={`/stipendier/${s.id}`} className="flex items-center gap-2 p-2 rounded-xl hover:bg-secondary/60">
+                      <div className="h-9 w-9 rounded-lg bg-accent-soft text-accent flex flex-col items-center justify-center leading-none shrink-0">
+                        <span className="text-[9px] font-semibold uppercase">{d.toLocaleDateString("sv-SE", { month: "short" }).slice(0, 3)}</span>
+                        <span className="text-xs font-bold">{d.getDate()}</span>
+                      </div>
+                      <p className="text-sm font-medium truncate flex-1">{s.name}</p>
+                      <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                    </Link>
                   </li>
-                ))}
-              </ul>
-            )}
-          </CardContent>
-        </Card>
-
-        {/* Drafts */}
-        <Card className="rounded-2xl shadow-soft lg:col-span-2">
-          <CardContent className="p-6">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3"><FileText className="h-4 w-4" /> Sparade utkast</div>
-            {drafts.length === 0 ? (
-              <EmptyInline label="Inga utkast sparade ännu." cta="Skapa ett utkast" to="/matchningar" />
-            ) : (
-              <ul className="divide-y divide-border">
-                {drafts.map((d) => (
-                  <li key={d.scholarshipId} className="py-3 flex items-center justify-between gap-3">
-                    <div className="min-w-0">
-                      <p className="font-medium truncate">{d.scholarshipName}</p>
-                      <p className="text-xs text-muted-foreground">Uppdaterad {new Date(d.updatedAt).toLocaleString("sv-SE")}</p>
-                    </div>
-                    <div className="flex gap-1.5 shrink-0">
-                      <Button asChild size="sm" variant="outline" className="rounded-lg">
-                        <Link to={`/utkast/${d.scholarshipId}`}>Öppna</Link>
-                      </Button>
-                      <Button size="sm" variant="ghost" onClick={() => deleteDraft(d.scholarshipId)} className="rounded-lg text-muted-foreground hover:text-destructive">
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </CardContent>
-        </Card>
+                );
+              })}
+            </ul>
+          )}
+        </Section>
 
         {/* Missing docs */}
-        <Card className="rounded-2xl shadow-soft">
-          <CardContent className="p-6">
-            <div className="flex items-center gap-2 text-sm text-muted-foreground mb-3"><AlertCircle className="h-4 w-4" /> Dokument att fixa</div>
-            {!profile ? (
-              <p className="text-sm text-muted-foreground">Skapa profil för att se vilka dokument du saknar.</p>
-            ) : missingDocs.length === 0 ? (
-              <p className="text-sm text-success font-medium">Du har alla standarddokument!</p>
-            ) : (
-              <ul className="space-y-2">
-                {missingDocs.map((d) => (
-                  <li key={d} className="flex items-center gap-2 text-sm">
-                    <span className="h-1.5 w-1.5 rounded-full bg-warning" /> {d}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </CardContent>
-        </Card>
+        <Section icon={AlertCircle} title="Dokument att fixa">
+          {!profile ? (
+            <Empty text="Skapa profil för att se dina dokument." cta="Skapa profil" to="/profil" />
+          ) : missingDocs.length === 0 ? (
+            <p className="text-sm text-success font-medium px-2 py-2">Du har alla standarddokument! 🎉</p>
+          ) : (
+            <ul className="space-y-1 px-2 py-1">
+              {missingDocs.map((d) => (
+                <li key={d} className="flex items-center gap-2 text-sm">
+                  <span className="h-1.5 w-1.5 rounded-full bg-warning" /> {d}
+                </li>
+              ))}
+            </ul>
+          )}
+        </Section>
       </div>
-    </div>
+    </AppScreen>
   );
 }
 
-function EmptyInline({ label, cta, to }: { label: string; cta: string; to: string }) {
+function Section({
+  icon: Icon,
+  title,
+  count,
+  children,
+}: {
+  icon: any;
+  title: string;
+  count?: number;
+  children: React.ReactNode;
+}) {
   return (
-    <div className="text-sm text-muted-foreground">
-      <p>{label}</p>
-      <Button asChild size="sm" variant="outline" className="mt-3 rounded-lg">
-        <Link to={to}>{cta}</Link>
-      </Button>
+    <section className="bg-card rounded-3xl border border-border/60 shadow-soft p-3">
+      <div className="flex items-center justify-between px-1.5 pt-0.5 pb-2">
+        <h2 className="font-semibold text-sm flex items-center gap-1.5">
+          <Icon className="h-4 w-4 text-primary" />
+          {title}
+        </h2>
+        {typeof count === "number" && count > 0 && (
+          <span className="text-[10px] font-semibold text-muted-foreground bg-secondary px-2 py-0.5 rounded-full">
+            {count}
+          </span>
+        )}
+      </div>
+      {children}
+    </section>
+  );
+}
+
+function Empty({ text, cta, to }: { text: string; cta: string; to: string }) {
+  return (
+    <div className="px-2 py-3 text-center">
+      <p className="text-xs text-muted-foreground">{text}</p>
+      <Link to={to} className="inline-block mt-1.5 text-xs font-semibold text-primary">
+        {cta} →
+      </Link>
     </div>
   );
 }

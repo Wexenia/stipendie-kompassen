@@ -1,18 +1,17 @@
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { SCHOLARSHIPS } from "@/data/scholarships";
 import { loadDrafts, loadProfile, saveDraft } from "@/lib/storage";
 import { matchScholarship } from "@/lib/matching";
 import { generateDraft } from "@/lib/draft";
 import { useState, useEffect } from "react";
-import { Card, CardContent } from "@/components/ui/card";
+import AppScreen from "@/components/layout/AppScreen";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowLeft, Copy, RotateCw, Save, AlertTriangle, FileText } from "lucide-react";
+import { Copy, RotateCw, Save, AlertTriangle, FileText } from "lucide-react";
 import { toast } from "sonner";
 
 export default function DraftPage() {
   const { id } = useParams();
-  const navigate = useNavigate();
   const scholarship = SCHOLARSHIPS.find((s) => s.id === id);
   const profile = loadProfile();
   const [text, setText] = useState("");
@@ -30,7 +29,7 @@ export default function DraftPage() {
         const match = matchScholarship(profile, scholarship);
         setText(generateDraft(profile, scholarship, match));
         setLoading(false);
-      }, 600);
+      }, 500);
       return () => clearTimeout(t);
     } else {
       setLoading(false);
@@ -40,22 +39,24 @@ export default function DraftPage() {
 
   if (!scholarship) {
     return (
-      <div className="container py-20 text-center">
-        <p className="text-muted-foreground">Stipendiet hittades inte.</p>
-      </div>
+      <AppScreen title="Utkast" back>
+        <p className="text-sm text-muted-foreground text-center py-10">Stipendiet hittades inte.</p>
+      </AppScreen>
     );
   }
 
   if (!profile) {
     return (
-      <div className="container py-20 max-w-xl text-center">
-        <FileText className="h-12 w-12 text-muted-foreground mx-auto" />
-        <h2 className="mt-4 text-2xl font-bold">Skapa profil först</h2>
-        <p className="mt-2 text-muted-foreground">Vi behöver din profil för att kunna generera ett personligt utkast.</p>
-        <Button asChild className="mt-6 rounded-xl">
-          <Link to="/profil">Skapa profil</Link>
-        </Button>
-      </div>
+      <AppScreen title="Utkast" back>
+        <div className="text-center py-10">
+          <FileText className="h-10 w-10 text-muted-foreground mx-auto" />
+          <h2 className="mt-3 text-base font-semibold">Skapa profil först</h2>
+          <p className="mt-1 text-xs text-muted-foreground">Vi behöver din profil för att generera ett utkast.</p>
+          <Button asChild className="mt-4 rounded-xl">
+            <Link to="/profil">Skapa profil</Link>
+          </Button>
+        </div>
+      </AppScreen>
     );
   }
 
@@ -66,7 +67,7 @@ export default function DraftPage() {
       setText(generateDraft(profile, scholarship, match));
       setLoading(false);
       toast.success("Nytt utkast genererat");
-    }, 500);
+    }, 400);
   };
 
   const copy = async () => {
@@ -85,51 +86,44 @@ export default function DraftPage() {
   };
 
   return (
-    <div className="container py-8 md:py-12 max-w-4xl">
-      <Button variant="ghost" onClick={() => navigate(-1)} className="mb-4 -ml-3">
-        <ArrowLeft className="mr-1 h-4 w-4" /> Tillbaka
-      </Button>
+    <AppScreen title="Ansökningsutkast" subtitle={scholarship.name} back>
+      <div className="space-y-3">
+        <div className="flex items-start gap-2 rounded-2xl bg-warning/10 border border-warning/30 p-3">
+          <AlertTriangle className="h-4 w-4 text-warning shrink-0 mt-0.5" />
+          <p className="text-xs text-foreground/85 leading-relaxed">
+            <span className="font-semibold">AI-genererat utkast.</span> Läs igenom, ändra och kontrollera att all information stämmer innan du skickar in.
+          </p>
+        </div>
 
-      <h1 className="text-3xl md:text-4xl font-bold">Ansökningsutkast</h1>
-      <p className="mt-2 text-muted-foreground">{scholarship.name} · {scholarship.organization}</p>
-
-      <div className="mt-6 flex items-start gap-3 rounded-xl bg-warning/10 border border-warning/30 p-4">
-        <AlertTriangle className="h-5 w-5 text-warning shrink-0 mt-0.5" />
-        <p className="text-sm text-foreground/90">
-          <span className="font-semibold">Detta är ett AI-genererat utkast.</span> Läs igenom, ändra och kontrollera att all information stämmer innan du skickar in ansökan.
-        </p>
-      </div>
-
-      <Card className="rounded-2xl shadow-soft mt-6">
-        <CardContent className="p-4 md:p-6">
+        <div className="rounded-2xl bg-card border border-border/60 p-3 shadow-soft">
           {loading ? (
-            <div className="space-y-3 animate-pulse">
+            <div className="space-y-2 animate-pulse py-2">
               {Array.from({ length: 8 }).map((_, i) => (
-                <div key={i} className="h-3 bg-secondary rounded" style={{ width: `${60 + Math.random() * 40}%` }} />
+                <div key={i} className="h-2.5 bg-secondary rounded" style={{ width: `${60 + Math.random() * 40}%` }} />
               ))}
             </div>
           ) : (
             <Textarea
               value={text}
               onChange={(e) => setText(e.target.value)}
-              rows={22}
-              className="font-mono text-sm leading-relaxed border-0 focus-visible:ring-0 resize-none p-0"
+              rows={18}
+              className="font-mono text-[12px] leading-relaxed border-0 focus-visible:ring-0 resize-none p-1 bg-transparent"
             />
           )}
-        </CardContent>
-      </Card>
+        </div>
 
-      <div className="mt-4 flex flex-wrap gap-2">
-        <Button onClick={save} className="rounded-xl">
-          <Save className="h-4 w-4 mr-1.5" /> Spara lokalt
-        </Button>
-        <Button variant="outline" onClick={copy} className="rounded-xl">
-          <Copy className="h-4 w-4 mr-1.5" /> Kopiera
-        </Button>
-        <Button variant="outline" onClick={regenerate} className="rounded-xl">
-          <RotateCw className="h-4 w-4 mr-1.5" /> Generera om
-        </Button>
+        <div className="grid grid-cols-3 gap-2">
+          <Button onClick={save} className="rounded-xl h-11 text-xs">
+            <Save className="h-3.5 w-3.5 mr-1" /> Spara
+          </Button>
+          <Button variant="outline" onClick={copy} className="rounded-xl h-11 text-xs">
+            <Copy className="h-3.5 w-3.5 mr-1" /> Kopiera
+          </Button>
+          <Button variant="outline" onClick={regenerate} className="rounded-xl h-11 text-xs">
+            <RotateCw className="h-3.5 w-3.5 mr-1" /> Ny
+          </Button>
+        </div>
       </div>
-    </div>
+    </AppScreen>
   );
 }

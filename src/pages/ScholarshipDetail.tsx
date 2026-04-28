@@ -1,17 +1,14 @@
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { SCHOLARSHIPS } from "@/data/scholarships";
 import { loadProfile, loadSavedIds, toggleSaved } from "@/lib/storage";
 import { matchScholarship } from "@/lib/matching";
-import { Card, CardContent } from "@/components/ui/card";
+import AppScreen from "@/components/layout/AppScreen";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, Building2, Calendar, Coins, ExternalLink, FileText, CheckCircle2, AlertCircle, Bookmark, BookmarkCheck } from "lucide-react";
-import { MatchBadge } from "@/components/MatchBadge";
+import { Building2, Calendar, Coins, ExternalLink, FileText, CheckCircle2, AlertCircle, Bookmark, BookmarkCheck } from "lucide-react";
 import { useEffect, useState } from "react";
 
 export default function ScholarshipDetail() {
   const { id } = useParams();
-  const navigate = useNavigate();
   const s = SCHOLARSHIPS.find((x) => x.id === id);
   const profile = loadProfile();
   const [saved, setSaved] = useState(false);
@@ -22,12 +19,9 @@ export default function ScholarshipDetail() {
 
   if (!s) {
     return (
-      <div className="container py-20 text-center">
-        <p className="text-muted-foreground">Stipendiet hittades inte.</p>
-        <Button asChild variant="outline" className="mt-4 rounded-xl">
-          <Link to="/stipendier">Tillbaka</Link>
-        </Button>
-      </div>
+      <AppScreen title="Stipendium" back>
+        <p className="text-sm text-muted-foreground text-center py-10">Stipendiet hittades inte.</p>
+      </AppScreen>
     );
   }
 
@@ -43,149 +37,174 @@ export default function ScholarshipDetail() {
   const deadline = new Date(s.deadline).toLocaleDateString("sv-SE", { day: "numeric", month: "long", year: "numeric" });
 
   return (
-    <div className="container py-8 md:py-12 max-w-4xl">
-      <Button variant="ghost" onClick={() => navigate(-1)} className="mb-4 -ml-3">
-        <ArrowLeft className="mr-1 h-4 w-4" /> Tillbaka
-      </Button>
-
-      <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-6">
-        <div>
-          <h1 className="text-3xl md:text-4xl font-bold leading-tight">{s.name}</h1>
-          <p className="mt-2 text-muted-foreground flex items-center gap-1.5">
-            <Building2 className="h-4 w-4" /> {s.organization}
+    <AppScreen
+      title={s.name}
+      back
+      right={
+        <button
+          onClick={() => setSaved(toggleSaved(s.id).includes(s.id))}
+          className="h-9 w-9 flex items-center justify-center rounded-full hover:bg-secondary text-foreground"
+          aria-label="Spara"
+        >
+          {saved ? <BookmarkCheck className="h-5 w-5 text-primary" /> : <Bookmark className="h-5 w-5" />}
+        </button>
+      }
+    >
+      <div className="space-y-3">
+        {/* Hero card */}
+        <div className="rounded-3xl bg-warm-gradient text-primary-foreground p-4">
+          <p className="text-[11px] opacity-80 flex items-center gap-1">
+            <Building2 className="h-3 w-3" /> {s.organization}
           </p>
-          <div className="mt-4 flex flex-wrap gap-1.5">
-            {s.tags.map((t) => (
-              <Badge key={t} variant="secondary" className="rounded-full">{t}</Badge>
-            ))}
+          <h2 className="font-bold text-lg mt-0.5 leading-tight">{s.name}</h2>
+          <div className="mt-3 flex items-end justify-between">
+            <div>
+              <p className="text-[10px] opacity-80 uppercase font-semibold">Belopp</p>
+              <p className="text-2xl font-bold leading-none">{s.amount.toLocaleString("sv-SE")} kr</p>
+            </div>
+            {match && (
+              <div className="text-right">
+                <p className="text-[10px] opacity-80 uppercase font-semibold">Matchning</p>
+                <p className="text-2xl font-bold leading-none">{match.score}%</p>
+              </div>
+            )}
           </div>
         </div>
-        <Button
-          variant="outline"
-          className="rounded-xl"
-          onClick={() => setSaved(toggleSaved(s.id).includes(s.id))}
-        >
-          {saved ? <><BookmarkCheck className="h-4 w-4 mr-1.5 text-primary" /> Sparat</> : <><Bookmark className="h-4 w-4 mr-1.5" /> Spara</>}
-        </Button>
-      </div>
 
-      <div className="grid md:grid-cols-3 gap-3 mb-6">
-        <InfoTile icon={Coins} label="Belopp" value={`${s.amount.toLocaleString("sv-SE")} kr`} accent />
-        <InfoTile icon={Calendar} label="Sista ansökan" value={deadline} />
-        <InfoTile icon={FileText} label="Dokument" value={`${s.requiredDocuments.length} st krävs`} />
-      </div>
+        {/* Info row */}
+        <div className="grid grid-cols-2 gap-2">
+          <InfoTile icon={Calendar} label="Sista ansökan" value={deadline} />
+          <InfoTile icon={FileText} label="Dokument" value={`${s.requiredDocuments.length} st krävs`} />
+        </div>
 
-      {match && (
-        <Card className="rounded-2xl shadow-soft mb-6 border-primary/20 bg-primary-soft/40">
-          <CardContent className="p-6">
-            <div className="flex items-start justify-between gap-4 flex-wrap">
-              <div>
-                <h2 className="font-semibold text-lg">Din matchning</h2>
-                <p className="text-sm text-muted-foreground mt-1">{match.explanation}</p>
-              </div>
-              <MatchBadge score={match.score} />
-            </div>
-          </CardContent>
-        </Card>
-      )}
+        {/* Tags */}
+        <div className="flex flex-wrap gap-1.5">
+          {s.tags.map((t) => (
+            <span key={t} className="text-[11px] font-medium px-2.5 py-1 rounded-full bg-secondary text-muted-foreground">
+              {t}
+            </span>
+          ))}
+        </div>
 
-      <Card className="rounded-2xl shadow-soft mb-6">
-        <CardContent className="p-6 space-y-4">
-          <h2 className="font-semibold text-lg">Beskrivning</h2>
-          <p className="text-foreground/80 leading-relaxed">{s.description}</p>
-        </CardContent>
-      </Card>
+        {/* Description */}
+        <Section title="Beskrivning">
+          <p className="text-sm text-foreground/85 leading-relaxed">{s.description}</p>
+        </Section>
 
-      <Card className="rounded-2xl shadow-soft mb-6">
-        <CardContent className="p-6 space-y-4">
-          <h2 className="font-semibold text-lg">Behörighetskriterier</h2>
-          <ul className="space-y-2">
+        {/* Criteria */}
+        <Section title="Behörighetskriterier">
+          <ul className="space-y-1.5">
             {s.criteria.map((c) => (
               <li key={c} className="flex gap-2 text-sm">
                 <CheckCircle2 className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                <span>{c}</span>
+                <span className="text-foreground/85">{c}</span>
               </li>
             ))}
           </ul>
-        </CardContent>
-      </Card>
+        </Section>
 
-      {match && (
-        <div className="grid md:grid-cols-2 gap-4 mb-6">
-          <Card className="rounded-2xl shadow-soft border-success/30">
-            <CardContent className="p-6">
-              <h3 className="font-semibold flex items-center gap-2"><CheckCircle2 className="h-5 w-5 text-success" /> Varför du matchar</h3>
+        {match && (
+          <>
+            <Section title="Varför du matchar" tone="success">
               {match.matched.length > 0 ? (
-                <ul className="mt-3 space-y-2 text-sm">
-                  {match.matched.map((m) => <li key={m} className="text-foreground/80">• {m}</li>)}
+                <ul className="space-y-1 text-sm">
+                  {match.matched.map((m) => (
+                    <li key={m} className="text-foreground/85">• {m}</li>
+                  ))}
                 </ul>
               ) : (
-                <p className="mt-3 text-sm text-muted-foreground">Begränsad matchning på din profil.</p>
+                <p className="text-sm text-muted-foreground">Begränsad matchning på din profil.</p>
               )}
-            </CardContent>
-          </Card>
-          <Card className="rounded-2xl shadow-soft border-warning/30">
-            <CardContent className="p-6">
-              <h3 className="font-semibold flex items-center gap-2"><AlertCircle className="h-5 w-5 text-warning" /> Att kontrollera</h3>
-              {match.missing.length > 0 ? (
-                <ul className="mt-3 space-y-2 text-sm">
-                  {match.missing.map((m) => <li key={m} className="text-foreground/80">• {m}</li>)}
-                </ul>
-              ) : (
-                <p className="mt-3 text-sm text-muted-foreground">Inga uppenbara hinder identifierade.</p>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      )}
+            </Section>
 
-      <Card className="rounded-2xl shadow-soft mb-6">
-        <CardContent className="p-6">
-          <h2 className="font-semibold text-lg">Checklista – dokument som krävs</h2>
-          <div className="mt-4 space-y-2">
+            {match.missing.length > 0 && (
+              <Section title="Att kontrollera" tone="warning">
+                <ul className="space-y-1 text-sm">
+                  {match.missing.map((m) => (
+                    <li key={m} className="text-foreground/85">• {m}</li>
+                  ))}
+                </ul>
+              </Section>
+            )}
+          </>
+        )}
+
+        {/* Required docs checklist */}
+        <Section title="Checklista – dokument">
+          <div className="space-y-1.5">
             {s.requiredDocuments.map((d) => {
               const key = docKeyMap[d];
               const owned = key && ownedDocs ? ownedDocs[key] : false;
               return (
-                <div key={d} className="flex items-center justify-between rounded-xl bg-secondary/50 px-4 py-3">
+                <div key={d} className="flex items-center justify-between rounded-xl bg-secondary/60 px-3 py-2.5">
                   <span className="text-sm font-medium">{d}</span>
                   {owned ? (
-                    <span className="text-xs font-semibold text-success flex items-center gap-1">
-                      <CheckCircle2 className="h-4 w-4" /> Du har detta
+                    <span className="text-[11px] font-semibold text-success flex items-center gap-1">
+                      <CheckCircle2 className="h-3.5 w-3.5" /> Du har detta
                     </span>
                   ) : (
-                    <span className="text-xs font-semibold text-muted-foreground">Saknas</span>
+                    <span className="text-[11px] font-semibold text-muted-foreground">Saknas</span>
                   )}
                 </div>
               );
             })}
           </div>
-        </CardContent>
-      </Card>
+        </Section>
 
-      <div className="flex flex-col sm:flex-row gap-3">
-        <Button asChild size="lg" className="rounded-xl flex-1 shadow-glow">
-          <Link to={`/utkast/${s.id}`}>
-            <FileText className="h-4 w-4 mr-1.5" /> Skapa ansökningsutkast
-          </Link>
-        </Button>
-        <Button asChild variant="outline" size="lg" className="rounded-xl flex-1">
-          <a href={s.applicationUrl} target="_blank" rel="noreferrer">
-            Till officiell ansökan <ExternalLink className="h-4 w-4 ml-1.5" />
-          </a>
-        </Button>
+        {/* CTAs */}
+        <div className="space-y-2 pt-1">
+          <Button asChild className="w-full rounded-xl shadow-glow h-12">
+            <Link to={`/utkast/${s.id}`}>
+              <FileText className="h-4 w-4 mr-1.5" /> Skapa ansökningsutkast
+            </Link>
+          </Button>
+          <Button asChild variant="outline" className="w-full rounded-xl h-11">
+            <a href={s.applicationUrl} target="_blank" rel="noreferrer">
+              Till officiell ansökan <ExternalLink className="h-4 w-4 ml-1.5" />
+            </a>
+          </Button>
+        </div>
       </div>
+    </AppScreen>
+  );
+}
+
+function InfoTile({ icon: Icon, label, value }: { icon: any; label: string; value: string }) {
+  return (
+    <div className="rounded-2xl bg-card border border-border/60 p-3">
+      <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground uppercase font-semibold">
+        <Icon className="h-3 w-3" /> {label}
+      </div>
+      <div className="mt-1 font-semibold text-sm leading-tight">{value}</div>
     </div>
   );
 }
 
-function InfoTile({ icon: Icon, label, value, accent }: any) {
+function Section({
+  title,
+  children,
+  tone,
+}: {
+  title: string;
+  children: React.ReactNode;
+  tone?: "success" | "warning";
+}) {
+  const toneCls =
+    tone === "success"
+      ? "border-success/30 bg-success-soft/40"
+      : tone === "warning"
+      ? "border-warning/40 bg-warning/10"
+      : "border-border/60 bg-card";
+  const iconCls =
+    tone === "success" ? "text-success" : tone === "warning" ? "text-warning" : "text-primary";
   return (
-    <div className={`rounded-2xl border p-4 ${accent ? "bg-accent-soft border-accent/20" : "bg-card border-border"}`}>
-      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-        <Icon className="h-4 w-4" /> {label}
-      </div>
-      <div className="mt-1 font-semibold text-foreground">{value}</div>
-    </div>
+    <section className={`rounded-3xl border p-4 ${toneCls}`}>
+      <h3 className={`font-semibold text-sm mb-2 flex items-center gap-1.5 ${iconCls}`}>
+        {tone === "success" && <CheckCircle2 className="h-4 w-4" />}
+        {tone === "warning" && <AlertCircle className="h-4 w-4" />}
+        <span className={tone ? "" : "text-foreground"}>{title}</span>
+      </h3>
+      {children}
+    </section>
   );
 }
