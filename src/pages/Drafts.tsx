@@ -4,7 +4,7 @@ import { loadDrafts, loadProfile, loadSavedIds, deleteDraft } from "@/lib/storag
 import { SCHOLARSHIPS } from "@/data/scholarships";
 import AppScreen from "@/components/layout/AppScreen";
 import { Button } from "@/components/ui/button";
-import { FileText, Bookmark, Calendar, AlertCircle, Trash2, ChevronRight } from "lucide-react";
+import { FileText, Bookmark, Calendar, AlertCircle, Trash2, ChevronRight, CheckCircle2 } from "lucide-react";
 import { StudentProfile, SavedDraft } from "@/types/profile";
 
 export default function Drafts() {
