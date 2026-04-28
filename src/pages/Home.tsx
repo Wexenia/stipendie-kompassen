@@ -48,7 +48,7 @@ export default function Home() {
       {/* Greeting header */}
       <header className="flex items-start justify-between gap-3">
         <div>
-          <h1 className="text-[22px] font-bold leading-tight">Hej{profile?.namn ? `, ${profile.namn.split(" ")[0]}` : ""}! 👋</h1>
+          <h1 className="text-[22px] font-bold leading-tight">Hej{profile?.namn ? `, ${profile.namn.split(" ")[0]}` : ""}</h1>
           <p className="text-[13px] text-muted-foreground mt-0.5">Redo att hitta stipendier som passar dig?</p>
         </div>
         <button

@@ -4,7 +4,7 @@ import { loadDrafts, loadProfile, loadSavedIds, deleteDraft } from "@/lib/storag
 import { SCHOLARSHIPS } from "@/data/scholarships";
 import AppScreen from "@/components/layout/AppScreen";
 import { Button } from "@/components/ui/button";
-import { FileText, Bookmark, Calendar, AlertCircle, Trash2, ChevronRight } from "lucide-react";
+import { FileText, Bookmark, Calendar, AlertCircle, Trash2, ChevronRight, CheckCircle2 } from "lucide-react";
 import { StudentProfile, SavedDraft } from "@/types/profile";
 
 export default function Drafts() {
@@ -127,7 +127,7 @@ export default function Drafts() {
           {!profile ? (
             <Empty text="Skapa profil för att se dina dokument." cta="Skapa profil" to="/profil" />
           ) : missingDocs.length === 0 ? (
-            <p className="text-sm text-success font-medium px-2 py-2">Du har alla standarddokument! 🎉</p>
+            <p className="text-sm text-success font-medium px-2 py-2 flex items-center gap-2"><CheckCircle2 className="h-4 w-4" /> Du har alla standarddokument.</p>
           ) : (
             <ul className="space-y-1 px-2 py-1">
               {missingDocs.map((d) => (
