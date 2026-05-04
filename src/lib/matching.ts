@@ -62,11 +62,27 @@ export function matchScholarship(profile: StudentProfile, s: Scholarship): Match
     missing.push(`Studieort bör vara: ${s.eligibleLocations.join(", ")}`);
   }
 
-  // 4. Purpose
+  // 4. Purpose — map syfte option to tags
   possible += 15;
+  const syfteTagMap: Record<string, string[]> = {
+    "Extra ekonomiskt stöd under studierna": ["ekonomiskt stöd", "levnadskostnader", "fritt", "hyra"],
+    "Utlandsstudier eller utbyte": ["utbytesstudier", "utlandsstudier", "resor"],
+    "Examensarbete": ["examensarbete"],
+    "Praktik": ["praktik"],
+    "Forskningsprojekt": ["forskning", "projekt"],
+    "Studieresa": ["studieresa", "resor", "konferens"],
+    "Kursavgift eller utbildningskostnader": ["kursavgift", "kurslitteratur"],
+    "Boende eller levnadsomkostnader": ["levnadskostnader", "hyra"],
+    "Annat": ["fritt"],
+  };
+  const userPurposeTags = syfteTagMap[profile.syfte] ?? (profile.syfte ? [profile.syfte] : []);
   if (!s.purposes || s.purposes.length === 0 || s.purposes.includes("fritt")) {
     earned += 10;
-  } else if (profile.syfte && includesAny(profile.syfte, s.purposes)) {
+    if (userPurposeTags.some((t) => s.purposes?.includes(t))) {
+      earned += 5;
+      matched.push("Ditt syfte stämmer med stipendiets ändamål");
+    }
+  } else if (userPurposeTags.some((t) => s.purposes!.includes(t))) {
     earned += 15;
     matched.push("Ditt syfte stämmer med stipendiets ändamål");
   } else if (profile.syfte) {
@@ -93,7 +109,10 @@ export function matchScholarship(profile: StudentProfile, s: Scholarship): Match
   // 6. Financial need
   possible += 10;
   if (s.needBased) {
-    if (profile.ekonomi && /(begränsad|svag|behov|liten|låg)/i.test(profile.ekonomi)) {
+    if (
+      profile.ekonomi &&
+      /(begränsad|svårt|svag|behov|liten|låg|finansiera)/i.test(profile.ekonomi)
+    ) {
       earned += 10;
       matched.push("Behovsprövning kan vara till din fördel");
     } else {
