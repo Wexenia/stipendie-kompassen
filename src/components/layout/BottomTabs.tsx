@@ -1,16 +1,17 @@
 import { NavLink } from "react-router-dom";
-import { Home, User, Search, Sparkles, FileText } from "lucide-react";
+import { Home, User, Search, Sparkles, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
-
-const TABS = [
-  { to: "/", label: "Hem", icon: Home, end: true },
-  { to: "/profil", label: "Profil", icon: User },
-  { to: "/stipendier", label: "Stipendier", icon: Search },
-  { to: "/matchningar", label: "Matchningar", icon: Sparkles },
-  { to: "/ansokningar", label: "Ansökningar", icon: FileText },
-];
+import { useT } from "@/lib/i18n";
 
 export default function BottomTabs() {
+  const t = useT();
+  const TABS = [
+    { to: "/", label: t("nav.home"), icon: Home, end: true },
+    { to: "/profil", label: t("nav.profile"), icon: User },
+    { to: "/stipendier", label: t("nav.scholarships"), icon: Search },
+    { to: "/matchningar", label: t("nav.matches"), icon: Sparkles },
+    { to: "/installningar", label: t("nav.settings"), icon: Settings },
+  ];
   return (
     <nav className="absolute bottom-0 inset-x-0 z-30 bg-app/95 backdrop-blur-xl border-t border-border/70 pb-[env(safe-area-inset-bottom)]">
       <ul className="flex items-stretch justify-around px-1 pt-1.5 pb-1.5">

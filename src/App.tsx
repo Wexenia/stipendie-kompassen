@@ -10,6 +10,9 @@ import Scholarships from "./pages/Scholarships";
 import ScholarshipDetail from "./pages/ScholarshipDetail";
 import DraftPage from "./pages/DraftPage";
 import Drafts from "./pages/Drafts";
+import Matches from "./pages/Matches";
+import FAQ from "./pages/FAQ";
+import SettingsPage from "./pages/Settings";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -26,9 +29,11 @@ const App = () => (
             <Route path="/profil" element={<Profile />} />
             <Route path="/stipendier" element={<Scholarships />} />
             <Route path="/stipendier/:id" element={<ScholarshipDetail />} />
-            <Route path="/matchningar" element={<Scholarships matchedMode />} />
+            <Route path="/matchningar" element={<Matches />} />
             <Route path="/ansokningar" element={<Drafts />} />
             <Route path="/utkast/:id" element={<DraftPage />} />
+            <Route path="/faq" element={<FAQ />} />
+            <Route path="/installningar" element={<SettingsPage />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Layout>
