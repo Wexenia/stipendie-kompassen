@@ -9,13 +9,13 @@ import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { ArrowRight, CheckCircle2, Shield, Upload, FileText, X } from "lucide-react";
+import { SearchableCombobox } from "@/components/ui/SearchableCombobox";
 import {
   EMPTY_PROFILE,
   StudentProfile,
   KON_OPTIONS,
   UNIVERSITET_OPTIONS,
   STUDIEORT_OPTIONS,
-  HEMORT_SUGGESTIONS,
   AMNESOMRADE_OPTIONS,
   TERMIN_OPTIONS,
   SYFTE_OPTIONS,
