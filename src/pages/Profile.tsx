@@ -178,27 +178,14 @@ export default function Profile() {
                   </Select>
                 </Field>
                 <Field label="Studieort *" error={errors.studieort}>
-                  <Select value={profile.studieort} onValueChange={(v) => update("studieort", v)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Välj ort" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {STUDIEORT_OPTIONS.map((o) => (
-                        <SelectItem key={o} value={o}>{o}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </Field>
-              </div>
-              {profile.studieort === "Annan studieort" && (
-                <Field label="Ange studieort *" error={errors.studieortAnnan}>
-                  <Input
-                    value={profile.studieortAnnan ?? ""}
-                    onChange={(e) => update("studieortAnnan", e.target.value)}
-                    placeholder="Skriv din studieort"
+                  <SearchableCombobox
+                    value={profile.studieort}
+                    onChange={(v) => update("studieort", v)}
+                    options={STUDIEORT_OPTIONS}
+                    placeholder="Sök eller skriv din studieort"
                   />
                 </Field>
-              )}
+              </div>
             </>
           )}
 
