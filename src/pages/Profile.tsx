@@ -121,19 +121,13 @@ export default function Profile() {
               <Field
                 label="Hemort *"
                 error={errors.hemort}
-                hint="Börja skriv – välj från förslag eller ange egen ort."
+                hint="Används för att matcha stipendier med geografiska krav."
               >
                 <Input
                   value={profile.hemort}
                   onChange={(e) => update("hemort", e.target.value)}
-                  placeholder="t.ex. Malmö"
-                  list="hemort-list"
+                  placeholder="Skriv din hemort"
                 />
-                <datalist id="hemort-list">
-                  {HEMORT_SUGGESTIONS.map((c) => (
-                    <option key={c} value={c} />
-                  ))}
-                </datalist>
               </Field>
             </>
           )}
