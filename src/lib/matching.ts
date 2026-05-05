@@ -41,7 +41,13 @@ export function matchScholarship(profile: StudentProfile, s: Scholarship): Match
   if (s.eligibleUniversities.length === 0) {
     earned += 14;
     matched.push("Öppet för alla lärosäten");
-  } else if (s.eligibleUniversities.some((u) => norm(profile.universitet) === norm(u) || norm(profile.universitet).includes(norm(u)))) {
+  } else if (
+    s.eligibleUniversities.some((u) => {
+      const a = norm(profile.universitet);
+      const b = norm(u);
+      return a === b || a.includes(b) || b.includes(a);
+    })
+  ) {
     earned += 20;
     matched.push(`Ditt lärosäte (${profile.universitet}) är behörigt`);
   } else {

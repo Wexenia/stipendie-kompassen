@@ -9,13 +9,13 @@ import { Progress } from "@/components/ui/progress";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { ArrowRight, CheckCircle2, Shield, Upload, FileText, X } from "lucide-react";
+import { SearchableCombobox } from "@/components/ui/SearchableCombobox";
 import {
   EMPTY_PROFILE,
   StudentProfile,
   KON_OPTIONS,
   UNIVERSITET_OPTIONS,
   STUDIEORT_OPTIONS,
-  HEMORT_SUGGESTIONS,
   AMNESOMRADE_OPTIONS,
   TERMIN_OPTIONS,
   SYFTE_OPTIONS,
@@ -49,16 +49,13 @@ export default function Profile() {
     if (step === 0) {
       if (!profile.namn.trim()) e.namn = "Namn krävs";
       if (!profile.kon) e.kon = "Välj kön för att kunna matchas mot stipendier med särskilda kriterier.";
-      if (!profile.hemort.trim()) e.hemort = "Ange hemort eftersom vissa stipendier är kopplade till geografisk anknytning.";
+      if (!profile.hemort.trim()) e.hemort = "Ange din hemort.";
     }
     if (step === 1) {
-      if (!profile.universitet.trim()) e.universitet = "Lärosäte krävs";
+      if (!profile.universitet.trim()) e.universitet = "Ange din högskola eller skriv in den manuellt.";
       if (!profile.program.trim()) e.program = "Program krävs";
       if (!profile.amnesomrade.trim()) e.amnesomrade = "Välj ämnesområde";
-      if (!profile.studieort.trim())
-        e.studieort = "Ange studieort eftersom vissa stipendier riktar sig till studenter på särskilda orter.";
-      if (profile.studieort === "Annan studieort" && !profile.studieortAnnan?.trim())
-        e.studieortAnnan = "Ange din studieort";
+      if (!profile.studieort.trim()) e.studieort = "Ange din studieort.";
     }
     if (step === 2) {
       if (!profile.syfte.trim()) e.syfte = "Välj ett alternativ";
@@ -73,15 +70,7 @@ export default function Profile() {
       return;
     }
     if (step === STEPS.length - 1) {
-      // Persist effective studieort if "Annan"
-      const finalProfile: StudentProfile = {
-        ...profile,
-        studieort:
-          profile.studieort === "Annan studieort" && profile.studieortAnnan?.trim()
-            ? profile.studieortAnnan.trim()
-            : profile.studieort,
-      };
-      saveProfile(finalProfile);
+      saveProfile(profile);
       toast.success("Profil sparad!");
       navigate("/matchningar");
     } else {
@@ -132,19 +121,13 @@ export default function Profile() {
               <Field
                 label="Hemort *"
                 error={errors.hemort}
-                hint="Börja skriv – välj från förslag eller ange egen ort."
+                hint="Används för att matcha stipendier med geografiska krav."
               >
                 <Input
                   value={profile.hemort}
                   onChange={(e) => update("hemort", e.target.value)}
-                  placeholder="t.ex. Malmö"
-                  list="hemort-list"
+                  placeholder="Skriv din hemort"
                 />
-                <datalist id="hemort-list">
-                  {HEMORT_SUGGESTIONS.map((c) => (
-                    <option key={c} value={c} />
-                  ))}
-                </datalist>
               </Field>
             </>
           )}
@@ -152,16 +135,12 @@ export default function Profile() {
           {step === 1 && (
             <>
               <Field label="Universitet/högskola *" error={errors.universitet}>
-                <Select value={profile.universitet} onValueChange={(v) => update("universitet", v)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Välj lärosäte" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {UNIVERSITET_OPTIONS.map((u) => (
-                      <SelectItem key={u} value={u}>{u}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <SearchableCombobox
+                  value={profile.universitet}
+                  onChange={(v) => update("universitet", v)}
+                  options={UNIVERSITET_OPTIONS}
+                  placeholder="Sök eller skriv din högskola/universitet"
+                />
               </Field>
 
               <Field label="Program/utbildning *" error={errors.program}>
@@ -199,27 +178,14 @@ export default function Profile() {
                   </Select>
                 </Field>
                 <Field label="Studieort *" error={errors.studieort}>
-                  <Select value={profile.studieort} onValueChange={(v) => update("studieort", v)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Välj ort" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {STUDIEORT_OPTIONS.map((o) => (
-                        <SelectItem key={o} value={o}>{o}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </Field>
-              </div>
-              {profile.studieort === "Annan studieort" && (
-                <Field label="Ange studieort *" error={errors.studieortAnnan}>
-                  <Input
-                    value={profile.studieortAnnan ?? ""}
-                    onChange={(e) => update("studieortAnnan", e.target.value)}
-                    placeholder="Skriv din studieort"
+                  <SearchableCombobox
+                    value={profile.studieort}
+                    onChange={(v) => update("studieort", v)}
+                    options={STUDIEORT_OPTIONS}
+                    placeholder="Sök eller skriv din studieort"
                   />
                 </Field>
-              )}
+              </div>
             </>
           )}
 
