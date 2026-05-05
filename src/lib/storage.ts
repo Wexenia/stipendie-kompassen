@@ -1,15 +1,27 @@
-import { StudentProfile, SavedDraft } from "@/types/profile";
+import { StudentProfile, SavedApplication, ApplicationStatus } from "@/types/profile";
 
 const KEYS = {
   profile: "stipendia.profile",
   saved: "stipendia.saved",
   drafts: "stipendia.drafts",
+  notifs: "stipendia.notifs",
+  lang: "stipendia.lang",
 };
 
 export function loadProfile(): StudentProfile | null {
   try {
     const raw = localStorage.getItem(KEYS.profile);
-    return raw ? JSON.parse(raw) : null;
+    if (!raw) return null;
+    const p = JSON.parse(raw);
+    // Migrate old `namn` field if present
+    if (p && p.namn && !p.firstName) {
+      const parts = String(p.namn).trim().split(/\s+/);
+      p.firstName = parts.shift() ?? "";
+      p.lastName = parts.join(" ");
+      delete p.namn;
+    }
+    delete p.bakgrund;
+    return p;
   } catch {
     return null;
   }
@@ -23,6 +35,12 @@ export function saveProfile(p: StudentProfile) {
 export function clearProfile() {
   localStorage.removeItem(KEYS.profile);
   window.dispatchEvent(new Event("stipendia:update"));
+}
+
+export function clearAll() {
+  Object.values(KEYS).forEach((k) => localStorage.removeItem(k));
+  window.dispatchEvent(new Event("stipendia:update"));
+  window.dispatchEvent(new Event("stipendia:lang"));
 }
 
 export function loadSavedIds(): string[] {
@@ -42,18 +60,46 @@ export function toggleSaved(id: string): string[] {
   return next;
 }
 
-export function loadDrafts(): SavedDraft[] {
+export function loadDrafts(): SavedApplication[] {
   try {
     const raw = localStorage.getItem(KEYS.drafts);
-    return raw ? JSON.parse(raw) : [];
+    if (!raw) return [];
+    const list = JSON.parse(raw) as any[];
+    return list.map((d) => ({
+      status: (d.status as ApplicationStatus) ?? "utkast",
+      createdAt: d.createdAt ?? d.updatedAt ?? new Date().toISOString(),
+      updatedAt: d.updatedAt ?? new Date().toISOString(),
+      scholarshipId: d.scholarshipId,
+      scholarshipName: d.scholarshipName,
+      text: d.text ?? "",
+    }));
   } catch {
     return [];
   }
 }
 
-export function saveDraft(draft: SavedDraft) {
-  const cur = loadDrafts().filter((d) => d.scholarshipId !== draft.scholarshipId);
-  cur.push(draft);
+export function saveDraft(draft: Omit<SavedApplication, "createdAt" | "status"> & Partial<Pick<SavedApplication, "createdAt" | "status">>) {
+  const cur = loadDrafts();
+  const existing = cur.find((d) => d.scholarshipId === draft.scholarshipId);
+  const next: SavedApplication = {
+    scholarshipId: draft.scholarshipId,
+    scholarshipName: draft.scholarshipName,
+    text: draft.text,
+    status: draft.status ?? existing?.status ?? "utkast",
+    createdAt: existing?.createdAt ?? draft.createdAt ?? new Date().toISOString(),
+    updatedAt: draft.updatedAt ?? new Date().toISOString(),
+  };
+  const others = cur.filter((d) => d.scholarshipId !== draft.scholarshipId);
+  others.push(next);
+  localStorage.setItem(KEYS.drafts, JSON.stringify(others));
+  window.dispatchEvent(new Event("stipendia:update"));
+}
+
+export function setApplicationStatus(scholarshipId: string, status: ApplicationStatus) {
+  const cur = loadDrafts();
+  const idx = cur.findIndex((d) => d.scholarshipId === scholarshipId);
+  if (idx < 0) return;
+  cur[idx] = { ...cur[idx], status, updatedAt: new Date().toISOString() };
   localStorage.setItem(KEYS.drafts, JSON.stringify(cur));
   window.dispatchEvent(new Event("stipendia:update"));
 }

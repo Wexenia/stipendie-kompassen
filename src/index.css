@@ -6,53 +6,60 @@
 
 @layer base {
   :root {
-    /* White & green palette */
+    /* Fresh white & green + soft pink accent */
     --background: 0 0% 100%;
-    --foreground: 144 20% 10%;
+    --foreground: 152 30% 12%;
 
     --app-bg: 0 0% 100%;
-    --app-surface: 130 25% 97%;
+    --app-surface: 145 50% 97%;
 
     --card: 0 0% 100%;
-    --card-foreground: 144 20% 10%;
+    --card-foreground: 152 30% 12%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 144 20% 10%;
+    --popover-foreground: 152 30% 12%;
 
-    --primary: 152 47% 33%;
+    /* Primary green #2FA866 -> hsl(146 56% 42%) */
+    --primary: 146 56% 42%;
     --primary-foreground: 0 0% 100%;
-    --primary-soft: 140 47% 91%;
-    --primary-glow: 152 47% 42%;
+    /* Light green #E8F7EF -> hsl(143 53% 94%) */
+    --primary-soft: 143 53% 94%;
+    /* Glow lighter */
+    --primary-glow: 146 56% 52%;
+    /* Dark green #1F7A4D -> hsl(151 60% 30%) */
+    --primary-dark: 151 60% 30%;
 
-    --secondary: 130 25% 96%;
-    --secondary-foreground: 144 20% 10%;
+    --secondary: 145 40% 96%;
+    --secondary-foreground: 152 30% 12%;
 
-    --muted: 130 18% 95%;
-    --muted-foreground: 138 6% 44%;
+    --muted: 145 25% 95%;
+    --muted-foreground: 152 8% 42%;
 
-    --accent: 152 47% 25%;
-    --accent-foreground: 0 0% 100%;
-    --accent-soft: 140 47% 91%;
+    /* Accent pink #F7C6D9 -> hsl(338 70% 88%) */
+    --accent: 338 70% 78%;
+    --accent-foreground: 340 40% 22%;
+    /* Light pink #FCEEF4 -> hsl(335 69% 96%) */
+    --accent-soft: 335 69% 96%;
 
-    --success: 152 55% 35%;
+    --success: 146 60% 38%;
     --success-foreground: 0 0% 100%;
-    --success-soft: 140 47% 91%;
+    --success-soft: 143 53% 94%;
 
-    --warning: 38 92% 45%;
+    --warning: 38 92% 48%;
     --warning-foreground: 0 0% 100%;
 
     --destructive: 0 70% 48%;
     --destructive-foreground: 0 0% 100%;
 
-    --border: 130 10% 90%;
-    --input: 130 10% 90%;
-    --ring: 152 47% 33%;
+    --border: 145 20% 90%;
+    --input: 145 20% 90%;
+    --ring: 146 56% 42%;
 
     --radius: 1rem;
 
-    --gradient-primary: linear-gradient(135deg, hsl(152 47% 33%) 0%, hsl(152 47% 42%) 100%);
-    --gradient-warm: linear-gradient(135deg, hsl(152 47% 28%) 0%, hsl(152 50% 40%) 100%);
-    --gradient-page: radial-gradient(ellipse at top, hsl(140 30% 92%) 0%, hsl(135 20% 88%) 55%, hsl(130 15% 84%) 100%);
+    --gradient-primary: linear-gradient(135deg, hsl(146 56% 42%) 0%, hsl(146 56% 52%) 100%);
+    --gradient-warm: linear-gradient(135deg, hsl(151 60% 32%) 0%, hsl(146 56% 46%) 100%);
+    --gradient-page: radial-gradient(ellipse at top, hsl(143 50% 94%) 0%, hsl(335 50% 95%) 60%, hsl(145 25% 90%) 100%);
 
     --shadow-soft: 0 1px 2px hsl(150 30% 15% / 0.04), 0 4px 16px hsl(150 30% 20% / 0.06);
     --shadow-card: 0 1px 3px hsl(150 30% 15% / 0.05), 0 8px 24px hsl(150 30% 20% / 0.08);
@@ -71,54 +78,21 @@
 }
 
 @layer base {
-  * {
-    @apply border-border;
-  }
-
-  html {
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
-    -webkit-font-smoothing: antialiased;
-  }
-
-  body {
-    @apply text-foreground;
-    background: var(--gradient-page);
-    background-attachment: fixed;
-    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
-  }
-
-  h1, h2, h3, h4 {
-    @apply tracking-tight;
-  }
+  * { @apply border-border; }
+  html { font-family: 'Inter', system-ui, -apple-system, sans-serif; -webkit-font-smoothing: antialiased; }
+  body { @apply text-foreground; background: var(--gradient-page); background-attachment: fixed; font-feature-settings: "cv02", "cv03", "cv04", "cv11"; }
+  h1, h2, h3, h4 { @apply tracking-tight; }
 }
 
 @layer utilities {
-  .bg-app {
-    background-color: hsl(var(--app-bg));
-  }
-  .bg-app-surface {
-    background-color: hsl(var(--app-surface));
-  }
-  .bg-primary-gradient {
-    background: var(--gradient-primary);
-  }
-  .bg-warm-gradient {
-    background: var(--gradient-warm);
-  }
-  .shadow-soft {
-    box-shadow: var(--shadow-soft);
-  }
-  .shadow-card {
-    box-shadow: var(--shadow-card);
-  }
-  .shadow-phone {
-    box-shadow: var(--shadow-phone);
-  }
-  .shadow-glow {
-    box-shadow: var(--shadow-glow);
-  }
-
-  /* Hide scrollbar but allow scroll */
+  .bg-app { background-color: hsl(var(--app-bg)); }
+  .bg-app-surface { background-color: hsl(var(--app-surface)); }
+  .bg-primary-gradient { background: var(--gradient-primary); }
+  .bg-warm-gradient { background: var(--gradient-warm); }
+  .shadow-soft { box-shadow: var(--shadow-soft); }
+  .shadow-card { box-shadow: var(--shadow-card); }
+  .shadow-phone { box-shadow: var(--shadow-phone); }
+  .shadow-glow { box-shadow: var(--shadow-glow); }
   .no-scrollbar::-webkit-scrollbar { display: none; }
   .no-scrollbar { scrollbar-width: none; }
 }

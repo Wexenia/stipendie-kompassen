@@ -5,13 +5,13 @@ export interface DocumentUpload {
 }
 
 export interface StudentProfile {
-  namn: string;
+  firstName: string;
+  lastName: string;
   universitet: string;
   program: string;
   amnesomrade: string;
   termin: string;
   studieort: string;
-  studieortAnnan?: string;
   hemort: string;
   kon: string;
   ekonomi: string;
@@ -20,7 +20,6 @@ export interface StudentProfile {
   intressen: string;
   syfte: string;
   syfteAnnan?: string;
-  bakgrund: string;
   dokument: {
     studieintyg: boolean;
     cv: boolean;
@@ -31,13 +30,13 @@ export interface StudentProfile {
 }
 
 export const EMPTY_PROFILE: StudentProfile = {
-  namn: "",
+  firstName: "",
+  lastName: "",
   universitet: "",
   program: "",
   amnesomrade: "",
   termin: "",
   studieort: "",
-  studieortAnnan: "",
   hemort: "",
   kon: "",
   ekonomi: "",
@@ -46,7 +45,6 @@ export const EMPTY_PROFILE: StudentProfile = {
   intressen: "",
   syfte: "",
   syfteAnnan: "",
-  bakgrund: "",
   dokument: {
     studieintyg: false,
     cv: false,
@@ -56,11 +54,47 @@ export const EMPTY_PROFILE: StudentProfile = {
   uploads: [],
 };
 
-export interface SavedDraft {
+export type ApplicationStatus = "utkast" | "paborjad" | "skickad" | "arkiverad";
+
+export interface SavedApplication {
   scholarshipId: string;
   scholarshipName: string;
   text: string;
+  status: ApplicationStatus;
+  createdAt: string;
   updatedAt: string;
+}
+
+// Backwards-compat alias
+export type SavedDraft = SavedApplication;
+
+// Required field set for "completeness". Excludes optional fields.
+export const PROFILE_REQUIRED_FIELDS: (keyof StudentProfile)[] = [
+  "firstName",
+  "lastName",
+  "kon",
+  "hemort",
+  "universitet",
+  "program",
+  "amnesomrade",
+  "termin",
+  "studieort",
+  "syfte",
+  "ekonomi",
+];
+
+export function profileCompleteness(p: StudentProfile | null): number {
+  if (!p) return 0;
+  const total = PROFILE_REQUIRED_FIELDS.length;
+  const filled = PROFILE_REQUIRED_FIELDS.filter((k) => {
+    const v = (p as any)[k];
+    return typeof v === "string" && v.trim().length > 0;
+  }).length;
+  return Math.round((filled / total) * 100);
+}
+
+export function isProfileComplete(p: StudentProfile | null): boolean {
+  return profileCompleteness(p) === 100;
 }
 
 // Predefined options
@@ -105,8 +139,10 @@ export const HEMORT_SUGGESTIONS = [
   "Helsingborg", "Norrköping", "Jönköping", "Umeå", "Lund", "Borås", "Sundsvall",
   "Gävle", "Eskilstuna", "Halmstad", "Växjö", "Karlstad", "Kristianstad",
   "Södertälje", "Kalmar", "Östersund", "Trollhättan", "Luleå", "Skellefteå",
-  "Falun", "Kiruna", "Visby", "Karlskrona",
-];
+  "Falun", "Kiruna", "Visby", "Karlskrona", "Nyköping", "Varberg", "Motala",
+  "Lidköping", "Piteå", "Mariestad", "Sandviken", "Hudiksvall", "Enköping",
+  "Köping", "Falkenberg", "Skövde", "Ystad",
+] as const;
 
 export const AMNESOMRADE_OPTIONS = [
   "Teknik / Ingenjörsvetenskap",
@@ -155,4 +191,12 @@ export const EKONOMI_OPTIONS = [
   "Jag har svårt att täcka levnadsomkostnader",
   "Jag söker främst för att finansiera ett särskilt ändamål",
   "Vill inte uppge",
+] as const;
+
+export const DOC_TYPES = [
+  { k: "cv", label: "CV" },
+  { k: "personligtBrev", label: "Personligt brev" },
+  { k: "rekommendationsbrev", label: "Rekommendationsbrev" },
+  { k: "studieintyg", label: "Studieintyg" },
+  { k: "andra", label: "Andra viktiga dokument" },
 ] as const;
