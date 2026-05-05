@@ -70,15 +70,7 @@ export default function Profile() {
       return;
     }
     if (step === STEPS.length - 1) {
-      // Persist effective studieort if "Annan"
-      const finalProfile: StudentProfile = {
-        ...profile,
-        studieort:
-          profile.studieort === "Annan studieort" && profile.studieortAnnan?.trim()
-            ? profile.studieortAnnan.trim()
-            : profile.studieort,
-      };
-      saveProfile(finalProfile);
+      saveProfile(profile);
       toast.success("Profil sparad!");
       navigate("/matchningar");
     } else {
