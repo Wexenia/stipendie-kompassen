@@ -49,16 +49,13 @@ export default function Profile() {
     if (step === 0) {
       if (!profile.namn.trim()) e.namn = "Namn krävs";
       if (!profile.kon) e.kon = "Välj kön för att kunna matchas mot stipendier med särskilda kriterier.";
-      if (!profile.hemort.trim()) e.hemort = "Ange hemort eftersom vissa stipendier är kopplade till geografisk anknytning.";
+      if (!profile.hemort.trim()) e.hemort = "Ange din hemort.";
     }
     if (step === 1) {
-      if (!profile.universitet.trim()) e.universitet = "Lärosäte krävs";
+      if (!profile.universitet.trim()) e.universitet = "Ange din högskola eller skriv in den manuellt.";
       if (!profile.program.trim()) e.program = "Program krävs";
       if (!profile.amnesomrade.trim()) e.amnesomrade = "Välj ämnesområde";
-      if (!profile.studieort.trim())
-        e.studieort = "Ange studieort eftersom vissa stipendier riktar sig till studenter på särskilda orter.";
-      if (profile.studieort === "Annan studieort" && !profile.studieortAnnan?.trim())
-        e.studieortAnnan = "Ange din studieort";
+      if (!profile.studieort.trim()) e.studieort = "Ange din studieort.";
     }
     if (step === 2) {
       if (!profile.syfte.trim()) e.syfte = "Välj ett alternativ";
