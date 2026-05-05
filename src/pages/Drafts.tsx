@@ -1,184 +1,84 @@
 import { Link } from "react-router-dom";
 import { useEffect, useState } from "react";
-import { loadDrafts, loadProfile, loadSavedIds, deleteDraft } from "@/lib/storage";
-import { SCHOLARSHIPS } from "@/data/scholarships";
+import { loadDrafts, deleteDraft, setApplicationStatus } from "@/lib/storage";
 import AppScreen from "@/components/layout/AppScreen";
 import { Button } from "@/components/ui/button";
-import { FileText, Bookmark, Calendar, AlertCircle, Trash2, ChevronRight, CheckCircle2 } from "lucide-react";
-import { StudentProfile, SavedDraft } from "@/types/profile";
+import { FileText, Trash2, FolderOpen } from "lucide-react";
+import { SavedApplication, ApplicationStatus } from "@/types/profile";
+import { StatusBadge } from "@/components/StatusBadge";
+import { useT } from "@/lib/i18n";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 export default function Drafts() {
-  const [profile, setProfile] = useState<StudentProfile | null>(null);
-  const [savedIds, setSavedIds] = useState<string[]>([]);
-  const [drafts, setDrafts] = useState<SavedDraft[]>([]);
+  const t = useT();
+  const [drafts, setDrafts] = useState<SavedApplication[]>([]);
 
   useEffect(() => {
-    const refresh = () => {
-      setProfile(loadProfile());
-      setSavedIds(loadSavedIds());
-      setDrafts(loadDrafts());
-    };
+    const refresh = () => setDrafts(loadDrafts());
     refresh();
     window.addEventListener("stipendia:update", refresh);
     return () => window.removeEventListener("stipendia:update", refresh);
   }, []);
 
-  const savedScholarships = SCHOLARSHIPS.filter((s) => savedIds.includes(s.id));
-  const upcoming = [...SCHOLARSHIPS]
-    .filter((s) => savedIds.includes(s.id) || drafts.some((d) => d.scholarshipId === s.id))
-    .sort((a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime())
-    .slice(0, 5);
-
-  const missingDocs: string[] = [];
-  if (profile) {
-    const d = profile.dokument;
-    if (!d.studieintyg) missingDocs.push("Studieintyg");
-    if (!d.cv) missingDocs.push("CV");
-    if (!d.personligtBrev) missingDocs.push("Personligt brev");
-    if (!d.rekommendationsbrev) missingDocs.push("Rekommendationsbrev");
-  }
+  const sorted = [...drafts].sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
 
   return (
-    <AppScreen title="Mina ansökningar" subtitle="Sparade stipendier & utkast">
-      <div className="space-y-3">
-        {/* Drafts */}
-        <Section icon={FileText} title="Sparade utkast" count={drafts.length}>
-          {drafts.length === 0 ? (
-            <Empty text="Inga utkast sparade ännu." cta="Bläddra stipendier" to="/stipendier" />
-          ) : (
-            <ul className="space-y-1.5">
-              {drafts.map((d) => (
-                <li key={d.scholarshipId} className="flex items-center gap-2 p-2.5 rounded-xl hover:bg-secondary/60">
+    <AppScreen title={t("app.title")}>
+      <div className="bg-card rounded-3xl border border-border/60 shadow-soft p-3">
+        {sorted.length === 0 ? (
+          <div className="px-2 py-10 text-center">
+            <div className="mx-auto h-12 w-12 rounded-2xl bg-accent-soft text-accent-foreground flex items-center justify-center mb-2">
+              <FolderOpen className="h-6 w-6" />
+            </div>
+            <p className="text-sm text-muted-foreground">{t("app.empty")}</p>
+            <Button asChild variant="outline" className="mt-3 rounded-xl">
+              <Link to="/stipendier">{t("sch.title")}</Link>
+            </Button>
+          </div>
+        ) : (
+          <ul className="divide-y divide-border/60">
+            {sorted.map((d) => (
+              <li key={d.scholarshipId} className="px-1 py-2.5">
+                <div className="flex items-start gap-2">
                   <div className="h-10 w-10 rounded-xl bg-primary-soft text-primary flex items-center justify-center shrink-0">
                     <FileText className="h-4 w-4" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="font-semibold text-sm truncate">{d.scholarshipName}</p>
-                    <p className="text-[11px] text-muted-foreground">
-                      {new Date(d.updatedAt).toLocaleDateString("sv-SE")}
-                    </p>
-                  </div>
-                  <Button asChild size="sm" variant="ghost" className="rounded-lg h-8 px-2 text-xs">
-                    <Link to={`/utkast/${d.scholarshipId}`}>Öppna</Link>
-                  </Button>
-                  <button
-                    onClick={() => deleteDraft(d.scholarshipId)}
-                    className="h-8 w-8 flex items-center justify-center rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                    aria-label="Ta bort"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-        </Section>
-
-        {/* Saved */}
-        <Section icon={Bookmark} title="Sparade stipendier" count={savedScholarships.length}>
-          {savedScholarships.length === 0 ? (
-            <Empty text="Du har inte sparat några stipendier." cta="Utforska" to="/stipendier" />
-          ) : (
-            <ul className="space-y-1">
-              {savedScholarships.map((s) => (
-                <li key={s.id}>
-                  <Link to={`/stipendier/${s.id}`} className="flex items-center gap-2 p-2.5 rounded-xl hover:bg-secondary/60">
-                    <div className="min-w-0 flex-1">
-                      <p className="font-semibold text-sm truncate">{s.name}</p>
-                      <p className="text-[11px] text-muted-foreground">
-                        {s.amount.toLocaleString("sv-SE")} kr · {new Date(s.deadline).toLocaleDateString("sv-SE")}
-                      </p>
+                    <div className="flex items-start justify-between gap-2">
+                      <p className="font-semibold text-sm truncate">{d.scholarshipName}</p>
+                      <StatusBadge status={d.status} />
                     </div>
-                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
-        </Section>
-
-        {/* Deadlines */}
-        <Section icon={Calendar} title="Kommande deadlines">
-          {upcoming.length === 0 ? (
-            <p className="text-xs text-muted-foreground px-2 py-2">Spara stipendier för att se deadlines här.</p>
-          ) : (
-            <ul className="space-y-1.5">
-              {upcoming.map((s) => {
-                const d = new Date(s.deadline);
-                return (
-                  <li key={s.id}>
-                    <Link to={`/stipendier/${s.id}`} className="flex items-center gap-2 p-2 rounded-xl hover:bg-secondary/60">
-                      <div className="h-9 w-9 rounded-lg bg-accent-soft text-accent flex flex-col items-center justify-center leading-none shrink-0">
-                        <span className="text-[9px] font-semibold uppercase">{d.toLocaleDateString("sv-SE", { month: "short" }).slice(0, 3)}</span>
-                        <span className="text-xs font-bold">{d.getDate()}</span>
-                      </div>
-                      <p className="text-sm font-medium truncate flex-1">{s.name}</p>
-                      <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          )}
-        </Section>
-
-        {/* Missing docs */}
-        <Section icon={AlertCircle} title="Dokument att fixa">
-          {!profile ? (
-            <Empty text="Skapa profil för att se dina dokument." cta="Skapa profil" to="/profil" />
-          ) : missingDocs.length === 0 ? (
-            <p className="text-sm text-success font-medium px-2 py-2 flex items-center gap-2"><CheckCircle2 className="h-4 w-4" /> Du har alla standarddokument.</p>
-          ) : (
-            <ul className="space-y-1 px-2 py-1">
-              {missingDocs.map((d) => (
-                <li key={d} className="flex items-center gap-2 text-sm">
-                  <span className="h-1.5 w-1.5 rounded-full bg-warning" /> {d}
-                </li>
-              ))}
-            </ul>
-          )}
-        </Section>
-      </div>
-    </AppScreen>
-  );
-}
-
-function Section({
-  icon: Icon,
-  title,
-  count,
-  children,
-}: {
-  icon: any;
-  title: string;
-  count?: number;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className="bg-card rounded-3xl border border-border/60 shadow-soft p-3">
-      <div className="flex items-center justify-between px-1.5 pt-0.5 pb-2">
-        <h2 className="font-semibold text-sm flex items-center gap-1.5">
-          <Icon className="h-4 w-4 text-primary" />
-          {title}
-        </h2>
-        {typeof count === "number" && count > 0 && (
-          <span className="text-[10px] font-semibold text-muted-foreground bg-secondary px-2 py-0.5 rounded-full">
-            {count}
-          </span>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">
+                      {t("app.created")}: {new Date(d.createdAt).toLocaleDateString()}
+                    </p>
+                    <div className="flex items-center gap-1.5 mt-2">
+                      <Button asChild size="sm" variant="outline" className="rounded-lg h-8 text-xs flex-1">
+                        <Link to={`/utkast/${d.scholarshipId}`}>{t("common.open")}</Link>
+                      </Button>
+                      <Select value={d.status} onValueChange={(v) => setApplicationStatus(d.scholarshipId, v as ApplicationStatus)}>
+                        <SelectTrigger className="h-8 text-xs rounded-lg w-[120px]"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="utkast">{t("app.status.utkast")}</SelectItem>
+                          <SelectItem value="paborjad">{t("app.status.paborjad")}</SelectItem>
+                          <SelectItem value="skickad">{t("app.status.skickad")}</SelectItem>
+                          <SelectItem value="arkiverad">{t("app.status.arkiverad")}</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <button
+                        onClick={() => deleteDraft(d.scholarshipId)}
+                        className="h-8 w-8 flex items-center justify-center rounded-lg text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                        aria-label={t("common.delete")}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </li>
+            ))}
+          </ul>
         )}
       </div>
-      {children}
-    </section>
-  );
-}
-
-function Empty({ text, cta, to }: { text: string; cta: string; to: string }) {
-  return (
-    <div className="px-2 py-3 text-center">
-      <p className="text-xs text-muted-foreground">{text}</p>
-      <Link to={to} className="inline-block mt-1.5 text-xs font-semibold text-primary">
-        {cta} →
-      </Link>
-    </div>
+    </AppScreen>
   );
 }
