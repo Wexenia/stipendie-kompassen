@@ -135,16 +135,12 @@ export default function Profile() {
           {step === 1 && (
             <>
               <Field label="Universitet/högskola *" error={errors.universitet}>
-                <Select value={profile.universitet} onValueChange={(v) => update("universitet", v)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Välj lärosäte" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {UNIVERSITET_OPTIONS.map((u) => (
-                      <SelectItem key={u} value={u}>{u}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <SearchableCombobox
+                  value={profile.universitet}
+                  onChange={(v) => update("universitet", v)}
+                  options={UNIVERSITET_OPTIONS}
+                  placeholder="Sök eller skriv din högskola/universitet"
+                />
               </Field>
 
               <Field label="Program/utbildning *" error={errors.program}>
