@@ -15,16 +15,16 @@ export interface StudentProfile {
   hemort: string;
   kon: string;
   ekonomi: string;
-  ekonomiKommentar?: string;
+  /** Optional free-text "om dig" */
+  omDig?: string;
   engagemang: string;
   intressen: string;
   syfte: string;
   syfteAnnan?: string;
-  dokument: {
-    studieintyg: boolean;
-    cv: boolean;
-    personligtBrev: boolean;
-    rekommendationsbrev: boolean;
+  dokument?: {
+    cv?: boolean;
+    personligtBrev?: boolean;
+    rekommendationsbrev?: boolean;
   };
   uploads?: DocumentUpload[];
 }
@@ -40,17 +40,12 @@ export const EMPTY_PROFILE: StudentProfile = {
   hemort: "",
   kon: "",
   ekonomi: "",
-  ekonomiKommentar: "",
+  omDig: "",
   engagemang: "",
   intressen: "",
   syfte: "",
   syfteAnnan: "",
-  dokument: {
-    studieintyg: false,
-    cv: false,
-    personligtBrev: false,
-    rekommendationsbrev: false,
-  },
+  dokument: { cv: false, personligtBrev: false, rekommendationsbrev: false },
   uploads: [],
 };
 
@@ -65,22 +60,12 @@ export interface SavedApplication {
   updatedAt: string;
 }
 
-// Backwards-compat alias
 export type SavedDraft = SavedApplication;
 
-// Required field set for "completeness". Excludes optional fields.
 export const PROFILE_REQUIRED_FIELDS: (keyof StudentProfile)[] = [
-  "firstName",
-  "lastName",
-  "kon",
-  "hemort",
-  "universitet",
-  "program",
-  "amnesomrade",
-  "termin",
-  "studieort",
-  "syfte",
-  "ekonomi",
+  "firstName", "lastName", "kon", "hemort",
+  "universitet", "program", "amnesomrade", "termin", "studieort",
+  "syfte", "ekonomi",
 ];
 
 export function profileCompleteness(p: StudentProfile | null): number {
@@ -97,7 +82,6 @@ export function isProfileComplete(p: StudentProfile | null): boolean {
   return profileCompleteness(p) === 100;
 }
 
-// Predefined options
 export const KON_OPTIONS = ["Kvinna", "Man", "Annat", "Vill inte uppge"] as const;
 
 export const UNIVERSITET_OPTIONS = [
@@ -118,20 +102,11 @@ export const UNIVERSITET_OPTIONS = [
   "Mittuniversitetet",
   "Malmö universitet",
   "Södertörns högskola",
-  "Annat lärosäte",
 ] as const;
 
 export const STUDIEORT_OPTIONS = [
-  "Göteborg",
-  "Stockholm",
-  "Lund",
-  "Uppsala",
-  "Umeå",
-  "Linköping",
-  "Örebro",
-  "Växjö",
-  "Karlstad",
-  "Annan studieort",
+  "Göteborg", "Stockholm", "Lund", "Uppsala", "Umeå",
+  "Linköping", "Örebro", "Växjö", "Karlstad",
 ] as const;
 
 export const HEMORT_SUGGESTIONS = [
@@ -140,8 +115,6 @@ export const HEMORT_SUGGESTIONS = [
   "Gävle", "Eskilstuna", "Halmstad", "Växjö", "Karlstad", "Kristianstad",
   "Södertälje", "Kalmar", "Östersund", "Trollhättan", "Luleå", "Skellefteå",
   "Falun", "Kiruna", "Visby", "Karlskrona", "Nyköping", "Varberg", "Motala",
-  "Lidköping", "Piteå", "Mariestad", "Sandviken", "Hudiksvall", "Enköping",
-  "Köping", "Falkenberg", "Skövde", "Ystad",
 ] as const;
 
 export const AMNESOMRADE_OPTIONS = [
@@ -160,17 +133,9 @@ export const AMNESOMRADE_OPTIONS = [
 ] as const;
 
 export const TERMIN_OPTIONS = [
-  "Termin 1",
-  "Termin 2",
-  "Termin 3",
-  "Termin 4",
-  "Termin 5",
-  "Termin 6",
-  "Termin 7",
-  "Termin 8",
-  "Termin 9 eller högre",
-  "Masterstudent",
-  "Doktorand",
+  "Termin 1", "Termin 2", "Termin 3", "Termin 4", "Termin 5",
+  "Termin 6", "Termin 7", "Termin 8", "Termin 9 eller högre",
+  "Masterstudent", "Doktorand",
 ] as const;
 
 export const SYFTE_OPTIONS = [
@@ -197,6 +162,14 @@ export const DOC_TYPES = [
   { k: "cv", label: "CV" },
   { k: "personligtBrev", label: "Personligt brev" },
   { k: "rekommendationsbrev", label: "Rekommendationsbrev" },
-  { k: "studieintyg", label: "Studieintyg" },
   { k: "andra", label: "Andra viktiga dokument" },
 ] as const;
+
+export const SCHOLARSHIP_TYPES = [
+  "Ekonomiskt stöd",
+  "Utlandsstudier",
+  "Examensarbete",
+  "Praktik",
+  "Forskning",
+] as const;
+export type ScholarshipType = typeof SCHOLARSHIP_TYPES[number];

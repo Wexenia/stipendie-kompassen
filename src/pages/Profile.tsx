@@ -208,8 +208,11 @@ function ProfileWizard({ initial, initialStep, onCancel, onSaved }: { initial: S
         </button>
       }
     >
-      <div className="space-y-4">
+      <div className="space-y-5">
         <Progress value={progress} className="h-1.5" />
+        <div className="rounded-2xl bg-primary-soft/70 border border-primary/15 p-3 text-[12px] text-foreground/80 leading-relaxed">
+          {t("profile.aiInfo")}
+        </div>
 
         <div className="space-y-3.5">
           {step === 0 && (
@@ -303,8 +306,8 @@ function ProfileWizard({ initial, initialStep, onCancel, onSaved }: { initial: S
                   </SelectContent>
                 </Select>
               </Field>
-              <Field label={t("profile.economyExtra")}>
-                <Textarea rows={2} value={profile.ekonomiKommentar ?? ""} onChange={(e) => update("ekonomiKommentar", e.target.value)} placeholder="Frivilligt" />
+              <Field label={`${t("profile.aboutYou")} (${t("common.optional")})`} hint={t("profile.aboutYouHint")}>
+                <Textarea rows={3} value={profile.omDig ?? ""} onChange={(e) => update("omDig", e.target.value)} placeholder="" />
               </Field>
             </>
           )}
@@ -329,7 +332,7 @@ function ProfileWizard({ initial, initialStep, onCancel, onSaved }: { initial: S
               </div>
               <div className="flex items-start gap-2 rounded-2xl bg-primary-soft border border-primary/15 p-3 text-xs">
                 <Shield className="h-4 w-4 text-primary shrink-0 mt-0.5" />
-                <p className="text-foreground/80">Din profil sparas endast lokalt. Dela inte känsliga personuppgifter om det inte behövs.</p>
+                <p className="text-foreground/80">{t("profile.uploadHelp")}</p>
               </div>
             </>
           )}

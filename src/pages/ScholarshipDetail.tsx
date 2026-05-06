@@ -1,13 +1,13 @@
 import { Link, useParams } from "react-router-dom";
 import { SCHOLARSHIPS } from "@/data/scholarships";
-import { loadProfile, loadSavedIds, toggleSaved } from "@/lib/storage";
-import { matchScholarship } from "@/lib/matching";
+import { loadProfile, loadSavedIds, toggleSaved, isApplied, toggleApplied } from "@/lib/storage";
+import { checkEligibility } from "@/lib/eligibility";
 import AppScreen from "@/components/layout/AppScreen";
 import { Button } from "@/components/ui/button";
-import { Building2, Calendar, ExternalLink, FileText, CheckCircle2, AlertCircle, Bookmark, BookmarkCheck, Info } from "lucide-react";
+import { Building2, Calendar, ExternalLink, FileText, CheckCircle2, AlertCircle, Bookmark, BookmarkCheck, Check } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useT } from "@/lib/i18n";
-import { MatchExplainer } from "@/components/MatchExplainer";
+import { EligibilityBadge, ApplicationStatusBadge } from "@/components/StatusBadge";
 
 export default function ScholarshipDetail() {
   const t = useT();
@@ -15,17 +15,20 @@ export default function ScholarshipDetail() {
   const s = SCHOLARSHIPS.find((x) => x.id === id);
   const profile = loadProfile();
   const [saved, setSaved] = useState(false);
+  const [applied, setAppliedState] = useState(false);
 
-  useEffect(() => { if (id) setSaved(loadSavedIds().includes(id)); }, [id]);
+  useEffect(() => {
+    if (id) { setSaved(loadSavedIds().includes(id)); setAppliedState(isApplied(id)); }
+  }, [id]);
 
   if (!s) {
     return <AppScreen title={t("sch.title")} back><p className="text-sm text-muted-foreground text-center py-10">—</p></AppScreen>;
   }
 
-  const match = profile ? matchScholarship(profile, s) : null;
+  const elig = profile ? checkEligibility(profile, s) : null;
   const ownedDocs = profile?.dokument;
-  const docKeyMap: Record<string, keyof NonNullable<typeof ownedDocs>> = {
-    "Studieintyg": "studieintyg", "CV": "cv", "Personligt brev": "personligtBrev", "Rekommendationsbrev": "rekommendationsbrev",
+  const docKeyMap: Record<string, "cv" | "personligtBrev" | "rekommendationsbrev"> = {
+    "CV": "cv", "Personligt brev": "personligtBrev", "Rekommendationsbrev": "rekommendationsbrev",
   };
   const deadline = new Date(s.deadline).toLocaleDateString(undefined, { day: "numeric", month: "long", year: "numeric" });
 
@@ -43,18 +46,23 @@ export default function ScholarshipDetail() {
         <div className="rounded-3xl bg-warm-gradient text-primary-foreground p-4">
           <p className="text-[11px] opacity-80 flex items-center gap-1"><Building2 className="h-3 w-3" /> {s.organization}</p>
           <h2 className="font-bold text-lg mt-0.5 leading-tight">{s.name}</h2>
-          <div className="mt-3 flex items-end justify-between">
+          <div className="mt-3 flex items-end justify-between gap-2">
             <div>
               <p className="text-[10px] opacity-80 uppercase font-semibold">{t("sch.amount")}</p>
               <p className="text-2xl font-bold leading-none">{s.amount.toLocaleString("sv-SE")} kr</p>
             </div>
-            {match && (
-              <div className="text-right">
-                <p className="text-[10px] opacity-80 uppercase font-semibold">{t("sch.match")}</p>
-                <p className="text-2xl font-bold leading-none">{match.score}%</p>
-              </div>
-            )}
+            {elig && <EligibilityBadge eligible={elig.eligible} className="text-xs" />}
           </div>
+        </div>
+
+        <div className="flex items-center gap-2 flex-wrap">
+          <ApplicationStatusBadge scholarship={s} />
+          <button
+            onClick={() => { const next = toggleApplied(s.id); setAppliedState(next.includes(s.id)); }}
+            className="text-[11px] font-semibold text-muted-foreground hover:text-foreground inline-flex items-center gap-1 px-2 py-1 rounded-full border border-border"
+          >
+            <Check className="h-3 w-3" /> {applied ? t("sch.unmarkApplied") : t("sch.markApplied")}
+          </button>
         </div>
 
         <div className="grid grid-cols-2 gap-2">
@@ -81,11 +89,24 @@ export default function ScholarshipDetail() {
           </ul>
         </Section>
 
-        {match && (
+        {elig && (elig.reasons.length > 0 || elig.blockers.length > 0) && (
           <div className="rounded-3xl border border-border/60 bg-card p-4">
-            <h3 className="font-semibold text-sm flex items-center gap-1.5 mb-2"><Info className="h-4 w-4 text-primary" /> {t("sch.match")}: {match.score}%</h3>
-            <p className="text-[12px] text-muted-foreground leading-relaxed">{t("match.percentInfo")}</p>
-            <MatchExplainer match={match} />
+            {elig.reasons.length > 0 && (
+              <>
+                <h3 className="font-semibold text-sm flex items-center gap-1.5 mb-2 text-success"><CheckCircle2 className="h-4 w-4" /> {t("sch.whyEligible")}</h3>
+                <ul className="space-y-1 mb-3">
+                  {elig.reasons.map((r, i) => <li key={i} className="text-[12px] text-foreground/80">• {r}</li>)}
+                </ul>
+              </>
+            )}
+            {elig.blockers.length > 0 && (
+              <>
+                <h3 className="font-semibold text-sm flex items-center gap-1.5 mb-2 text-muted-foreground"><AlertCircle className="h-4 w-4" /> {t("sch.whyNot")}</h3>
+                <ul className="space-y-1">
+                  {elig.blockers.map((r, i) => <li key={i} className="text-[12px] text-foreground/70">• {r}</li>)}
+                </ul>
+              </>
+            )}
           </div>
         )}
 
@@ -93,7 +114,7 @@ export default function ScholarshipDetail() {
           <div className="space-y-1.5">
             {s.requiredDocuments.map((d) => {
               const key = docKeyMap[d];
-              const owned = key && ownedDocs ? ownedDocs[key] : false;
+              const owned = key && ownedDocs ? (ownedDocs as any)[key] : false;
               return (
                 <div key={d} className="flex items-center justify-between rounded-xl bg-secondary/60 px-3 py-2.5">
                   <span className="text-sm font-medium">{d}</span>
@@ -129,7 +150,6 @@ function InfoTile({ icon: Icon, label, value }: { icon: any; label: string; valu
     </div>
   );
 }
-
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="rounded-3xl border border-border/60 bg-card p-4">
