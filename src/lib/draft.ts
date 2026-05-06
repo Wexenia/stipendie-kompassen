@@ -1,39 +1,55 @@
 import { Scholarship } from "@/data/scholarships";
 import { StudentProfile } from "@/types/profile";
-import { MatchResult } from "./matching";
+import { EligibilityResult } from "./eligibility";
 import { getLang } from "./i18n";
 
-export function generateDraft(profile: StudentProfile, scholarship: Scholarship, match?: MatchResult): string {
-  const today = new Date().toLocaleDateString(getLang() === "en" ? "en-GB" : "sv-SE");
-  const fullName = `${profile.firstName ?? ""} ${profile.lastName ?? ""}`.trim() || "[Ditt namn]";
-  const program = profile.program || "min utbildning";
-  const universitet = profile.universitet || "mitt lärosäte";
-  const termin = profile.termin || "innevarande termin";
-  const syfte = profile.syfte?.trim() || "vidareutveckla mig inom mitt ämnesområde";
+// A non-templated draft. Builds varying paragraphs each call so two scholarships
+// produce visibly different texts.
+export function generateDraft(
+  profile: StudentProfile,
+  scholarship: Scholarship,
+  match?: EligibilityResult
+): string {
+  const en = getLang() === "en";
+  const today = new Date().toLocaleDateString(en ? "en-GB" : "sv-SE");
+  const fullName = `${profile.firstName ?? ""} ${profile.lastName ?? ""}`.trim() || (en ? "[Your name]" : "[Ditt namn]");
+  const program = profile.program || (en ? "my education" : "min utbildning");
+  const universitet = profile.universitet || (en ? "my university" : "mitt lärosäte");
+  const termin = profile.termin || (en ? "the current term" : "innevarande termin");
+  const syfte = profile.syfte?.trim() || (en ? "develop further within my field" : "vidareutveckla mig inom mitt ämnesområde");
   const engagemang = profile.engagemang?.trim();
   const intressen = profile.intressen?.trim();
+  const omDig = profile.omDig?.trim();
+  const docs = (profile.uploads ?? []).map((u) => u.documentType);
 
-  if (getLang() === "en") {
-    const matchSentence = match && match.matched.length > 0
-      ? `I believe I fit the criteria well: ${match.matched.slice(0, 3).join("; ").toLowerCase()}.`
-      : `I meet the criteria and would like to use this application to show why I am a suitable candidate.`;
+  const pick = <T,>(arr: T[]) => arr[Math.floor(Math.random() * arr.length)];
+
+  if (en) {
+    const opens = [
+      `My name is ${fullName}, a student of ${program} at ${universitet}, currently in ${termin}.`,
+      `I'm ${fullName} and I'm studying ${program} at ${universitet} (${termin}).`,
+      `Hello — I'm ${fullName}, in ${termin} of ${program} at ${universitet}.`,
+    ];
+    const motivations = [
+      omDig ? `A bit about me: ${omDig}` : `My academic path has shaped how I approach challenges in ${profile.amnesomrade || "my field"}.`,
+      intressen ? `I'm particularly drawn to ${intressen.toLowerCase()}, which guides much of what I work on.` : `I take a curious, hands-on approach to ${profile.amnesomrade || "my field"}.`,
+      engagemang ? `Beyond my studies I am engaged in ${engagemang.toLowerCase()}, which has taught me responsibility and collaboration.` : `Outside the classroom I keep building practical skills.`,
+    ];
+    const fitLine = match && match.reasons.length > 0
+      ? `I believe I align with this scholarship because ${match.reasons.slice(0, 2).join("; ").toLowerCase()}.`
+      : `I meet the criteria and would like to demonstrate why I'm a suitable candidate.`;
+    const docsLine = docs.length > 0 ? ` I'm happy to share my ${docs.join(", ")} if useful.` : "";
     return `${today}
 
 To ${scholarship.organization}
 
 Application for ${scholarship.name}
 
-Hello,
+${pick(opens)}
 
-My name is ${fullName} and I study ${program} at ${universitet}, currently in ${termin}. I am applying for ${scholarship.name} of ${scholarship.amount.toLocaleString("en-GB")} SEK.
+${pick(motivations)} ${pick(motivations)}
 
-My education has given me a strong foundation in ${profile.amnesomrade || "my field"}. ${intressen ? `I have a particular interest in ${intressen.toLowerCase()}.` : ""}
-
-${engagemang ? `Alongside my studies I am engaged in ${engagemang.toLowerCase()}, which has taught me responsibility and teamwork.` : ""}
-
-${matchSentence}
-
-If awarded, the funds will be used to ${syfte.toLowerCase()}. It would let me focus on my studies and take the next step in my development.
+${fitLine} If awarded ${scholarship.amount.toLocaleString("en-GB")} SEK, I would use the funding to ${syfte.toLowerCase()}.${docsLine}
 
 Thank you for considering my application.
 
@@ -42,9 +58,20 @@ ${fullName}
 `;
   }
 
-  const matchSats = match && match.matched.length > 0
-    ? `Jag bedömer att jag passar väl in på stipendiets kriterier: ${match.matched.slice(0, 3).join("; ").toLowerCase()}.`
+  const opens = [
+    `Mitt namn är ${fullName} och jag studerar ${program} vid ${universitet}, för närvarande ${termin}.`,
+    `Jag heter ${fullName}, läser ${program} på ${universitet} och befinner mig i ${termin}.`,
+    `Hej, jag är ${fullName} – ${termin} på ${program} vid ${universitet}.`,
+  ];
+  const motivations = [
+    omDig ? `Lite om mig: ${omDig}` : `Min utbildning har format hur jag tar mig an utmaningar inom ${profile.amnesomrade || "mitt ämne"}.`,
+    intressen ? `Jag har ett särskilt intresse för ${intressen.toLowerCase()}, vilket genomsyrar mycket av det jag gör.` : `Jag har en nyfiken och konkret inställning till ${profile.amnesomrade || "mitt ämne"}.`,
+    engagemang ? `Vid sidan av studierna är jag engagerad i ${engagemang.toLowerCase()}, vilket har lärt mig att ta ansvar och samarbeta.` : `Utanför studierna fortsätter jag bygga praktiska erfarenheter.`,
+  ];
+  const fitLine = match && match.reasons.length > 0
+    ? `Jag bedömer att jag passar väl in på ${scholarship.name} eftersom ${match.reasons.slice(0, 2).join("; ").toLowerCase()}.`
     : `Jag uppfyller stipendiets kriterier och vill med denna ansökan visa varför jag är en lämplig kandidat.`;
+  const docsLine = docs.length > 0 ? ` Jag bifogar gärna ${docs.join(", ")} om det är till hjälp.` : "";
 
   return `${today}
 
@@ -52,19 +79,13 @@ Till ${scholarship.organization}
 
 Ansökan om ${scholarship.name}
 
-Hej,
+${pick(opens)}
 
-Mitt namn är ${fullName} och jag studerar ${program} vid ${universitet}, för närvarande ${termin}. Jag ansöker härmed om ${scholarship.name} på ${scholarship.amount.toLocaleString("sv-SE")} kr.
+${pick(motivations)} ${pick(motivations)}
 
-Min utbildning har gett mig en stabil grund inom ${profile.amnesomrade || "mitt ämnesområde"}, och jag har under studietiden utvecklat både ämneskunskap och praktiska färdigheter. ${intressen ? `Jag har ett särskilt intresse för ${intressen.toLowerCase()}.` : ""}
+${fitLine} Om jag tilldelas ${scholarship.amount.toLocaleString("sv-SE")} kr skulle medlen användas till att ${syfte.toLowerCase()}.${docsLine}
 
-${engagemang ? `Vid sidan av studierna är jag engagerad i ${engagemang.toLowerCase()}, vilket har lärt mig att ta ansvar och samarbeta med andra.` : ""}
-
-${matchSats}
-
-Om jag tilldelas stipendiet kommer medlen att användas till att ${syfte.toLowerCase()}. Det skulle göra det möjligt för mig att fokusera fullt ut på mina studier och ta nästa steg i min utveckling.
-
-Tack för att ni tar er tid att läsa min ansökan. Jag bifogar gärna kompletterande underlag vid behov och svarar gärna på frågor.
+Tack för att ni läser min ansökan.
 
 Med vänliga hälsningar,
 ${fullName}
