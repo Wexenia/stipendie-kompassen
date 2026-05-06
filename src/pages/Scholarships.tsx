@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { SCHOLARSHIPS, Scholarship } from "@/data/scholarships";
 import AppScreen from "@/components/layout/AppScreen";
@@ -7,94 +7,65 @@ import { Button } from "@/components/ui/button";
 import { Search, Building2, Coins, Calendar, ChevronRight, SlidersHorizontal, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useT } from "@/lib/i18n";
+import { Switch } from "@/components/ui/switch";
 import {
   Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger, SheetFooter,
 } from "@/components/ui/sheet";
-
-const DEADLINE_OPTIONS = [
-  { id: "all", label: "Alla" },
-  { id: "30", label: "Inom 30 dagar" },
-  { id: "90", label: "Inom 3 mån" },
-  { id: "365", label: "Inom 1 år" },
-] as const;
-
-const AMOUNT_OPTIONS = [
-  { id: "all", label: "Alla", min: 0 },
-  { id: "10000", label: "10 000+", min: 10000 },
-  { id: "25000", label: "25 000+", min: 25000 },
-  { id: "50000", label: "50 000+", min: 50000 },
-] as const;
-
-const SORT_OPTIONS = [
-  { id: "deadline", label: "Deadline" },
-  { id: "amount", label: "Belopp" },
-  { id: "name", label: "Namn" },
-] as const;
+import { SearchableCombobox } from "@/components/ui/SearchableCombobox";
+import { AMNESOMRADE_OPTIONS, SCHOLARSHIP_TYPES, ScholarshipType, UNIVERSITET_OPTIONS, STUDIEORT_OPTIONS } from "@/types/profile";
+import { checkEligibility, scholarshipTypes } from "@/lib/eligibility";
+import { loadProfile } from "@/lib/storage";
+import { EligibilityBadge, ApplicationStatusBadge } from "@/components/StatusBadge";
 
 export default function Scholarships() {
   const t = useT();
   const [query, setQuery] = useState("");
-  const [tag, setTag] = useState<string>("Alla");
-  const [deadlineFilter, setDeadlineFilter] = useState<typeof DEADLINE_OPTIONS[number]["id"]>("all");
-  const [amountFilter, setAmountFilter] = useState<typeof AMOUNT_OPTIONS[number]["id"]>("all");
-  const [universityFilter, setUniversityFilter] = useState<string>("Alla");
-  const [locationFilter, setLocationFilter] = useState<string>("Alla");
-  const [purposeFilter, setPurposeFilter] = useState<string>("Alla");
-  const [sort, setSort] = useState<typeof SORT_OPTIONS[number]["id"]>("deadline");
+  const [field, setField] = useState<string>("");
+  const [uni, setUni] = useState<string>("");
+  const [loc, setLoc] = useState<string>("");
+  const [types, setTypes] = useState<ScholarshipType[]>([]);
+  const [eligibleOnly, setEligibleOnly] = useState(false);
   const [open, setOpen] = useState(false);
+  const [profile, setProfile] = useState(loadProfile());
 
-  const allTags = useMemo(() => ["Alla", ...Array.from(new Set(SCHOLARSHIPS.flatMap((s) => s.tags))).sort()], []);
-  const allUnis = useMemo(() => ["Alla", ...Array.from(new Set(SCHOLARSHIPS.flatMap((s) => s.eligibleUniversities))).sort()], []);
-  const allLocs = useMemo(() => ["Alla", ...Array.from(new Set(SCHOLARSHIPS.flatMap((s) => s.eligibleLocations))).sort()], []);
-  const allPurposes = useMemo(() => ["Alla", ...Array.from(new Set(SCHOLARSHIPS.flatMap((s) => s.purposes ?? []))).sort()], []);
+  useEffect(() => {
+    const r = () => setProfile(loadProfile());
+    window.addEventListener("stipendia:update", r);
+    return () => window.removeEventListener("stipendia:update", r);
+  }, []);
+
+  const norm = (s: string) => s.trim().toLowerCase();
+  const partial = (a: string, b: string) => norm(a).includes(norm(b)) || norm(b).includes(norm(a));
 
   const filtered = useMemo(() => {
-    const now = Date.now();
-    let list: Scholarship[] = SCHOLARSHIPS.filter((s) => {
-      if (tag !== "Alla" && !s.tags.includes(tag)) return false;
-      if (universityFilter !== "Alla" && !s.eligibleUniversities.includes(universityFilter)) return false;
-      if (locationFilter !== "Alla" && !s.eligibleLocations.includes(locationFilter)) return false;
-      if (purposeFilter !== "Alla" && !(s.purposes ?? []).includes(purposeFilter)) return false;
+    return SCHOLARSHIPS.filter((s) => {
       if (query) {
         const q = query.toLowerCase();
         const hit = s.name.toLowerCase().includes(q) || s.organization.toLowerCase().includes(q) || s.tags.some((t) => t.toLowerCase().includes(q));
         if (!hit) return false;
       }
-      if (deadlineFilter !== "all") {
-        const days = parseInt(deadlineFilter);
-        const diff = (new Date(s.deadline).getTime() - now) / 86400000;
-        if (diff < 0 || diff > days) return false;
+      if (field && !(s.eligibleFields.length === 0 || s.eligibleFields.some((f) => partial(f, field)) || partial(field, s.tags.join(" ")))) return false;
+      if (uni && !(s.eligibleUniversities.length === 0 || s.eligibleUniversities.some((u) => partial(u, uni)))) return false;
+      if (loc && !(s.eligibleLocations.length === 0 || s.eligibleLocations.some((l) => partial(l, loc)))) return false;
+      if (types.length > 0) {
+        const sTypes = scholarshipTypes(s);
+        if (!types.some((tp) => sTypes.includes(tp))) return false;
       }
-      const minAmount = AMOUNT_OPTIONS.find((a) => a.id === amountFilter)?.min ?? 0;
-      if (s.amount < minAmount) return false;
+      if (eligibleOnly && profile) {
+        if (!checkEligibility(profile, s).eligible) return false;
+      }
       return true;
     });
-
-    if (sort === "amount") list = [...list].sort((a, b) => b.amount - a.amount);
-    else if (sort === "name") list = [...list].sort((a, b) => a.name.localeCompare(b.name, "sv"));
-    else list = [...list].sort((a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime());
-
-    return list;
-  }, [query, tag, deadlineFilter, amountFilter, universityFilter, locationFilter, purposeFilter, sort]);
+  }, [query, field, uni, loc, types, eligibleOnly, profile]);
 
   const activeFilterCount =
-    (tag !== "Alla" ? 1 : 0) +
-    (deadlineFilter !== "all" ? 1 : 0) +
-    (amountFilter !== "all" ? 1 : 0) +
-    (universityFilter !== "Alla" ? 1 : 0) +
-    (locationFilter !== "Alla" ? 1 : 0) +
-    (purposeFilter !== "Alla" ? 1 : 0);
+    (field ? 1 : 0) + (uni ? 1 : 0) + (loc ? 1 : 0) + (types.length > 0 ? 1 : 0) + (eligibleOnly ? 1 : 0);
 
-  const resetFilters = () => {
-    setTag("Alla"); setDeadlineFilter("all"); setAmountFilter("all");
-    setUniversityFilter("Alla"); setLocationFilter("Alla"); setPurposeFilter("Alla");
-  };
+  const resetFilters = () => { setField(""); setUni(""); setLoc(""); setTypes([]); setEligibleOnly(false); };
 
   const total = SCHOLARSHIPS.length;
   const hasFilter = activeFilterCount > 0 || query.length > 0;
-  const subtitle = hasFilter
-    ? t("sch.showFiltered", { n: filtered.length, t: total })
-    : t("sch.showAll", { n: total });
+  const subtitle = hasFilter ? t("sch.showFiltered", { n: filtered.length, t: total }) : t("sch.showAll", { n: total });
 
   return (
     <AppScreen title={t("sch.title")} subtitle={subtitle}>
@@ -118,27 +89,34 @@ export default function Scholarships() {
                 <SheetTitle className="text-left">{t("sch.filterTitle")}</SheetTitle>
               </SheetHeader>
               <div className="space-y-5 py-4">
-                <FilterGroup label={t("sch.f.category")}>
-                  <ChipRow options={allTags.map((t) => ({ id: t, label: t }))} value={tag} onChange={setTag} />
-                </FilterGroup>
-                <FilterGroup label={t("sch.f.deadline")}>
-                  <ChipRow options={DEADLINE_OPTIONS.map((o) => ({ id: o.id, label: o.label }))} value={deadlineFilter} onChange={(v) => setDeadlineFilter(v as any)} />
-                </FilterGroup>
-                <FilterGroup label={t("sch.f.amount")}>
-                  <ChipRow options={AMOUNT_OPTIONS.map((o) => ({ id: o.id, label: o.label }))} value={amountFilter} onChange={(v) => setAmountFilter(v as any)} />
+                <FilterGroup label={t("sch.f.field")}>
+                  <ChipRow options={[{ id: "", label: "—" }, ...AMNESOMRADE_OPTIONS.map((o) => ({ id: o, label: o }))]} value={field} onChange={setField} />
                 </FilterGroup>
                 <FilterGroup label={t("sch.f.university")}>
-                  <ChipRow options={allUnis.map((u) => ({ id: u, label: u }))} value={universityFilter} onChange={setUniversityFilter} />
+                  <SearchableCombobox value={uni} onChange={setUni} options={UNIVERSITET_OPTIONS as any} placeholder={t("sch.f.university")} />
                 </FilterGroup>
                 <FilterGroup label={t("sch.f.location")}>
-                  <ChipRow options={allLocs.map((l) => ({ id: l, label: l }))} value={locationFilter} onChange={setLocationFilter} />
+                  <SearchableCombobox value={loc} onChange={setLoc} options={STUDIEORT_OPTIONS as any} placeholder={t("sch.f.location")} />
                 </FilterGroup>
-                <FilterGroup label={t("sch.f.purpose")}>
-                  <ChipRow options={allPurposes.map((p) => ({ id: p, label: p }))} value={purposeFilter} onChange={setPurposeFilter} />
+                <FilterGroup label={t("sch.f.type")}>
+                  <div className="flex gap-1.5 flex-wrap">
+                    {SCHOLARSHIP_TYPES.map((tp) => {
+                      const on = types.includes(tp);
+                      return (
+                        <button key={tp} onClick={() => setTypes((cur) => on ? cur.filter((x) => x !== tp) : [...cur, tp])} className={cn(
+                          "px-3 py-1.5 rounded-full text-xs font-medium border transition-colors",
+                          on ? "bg-primary text-primary-foreground border-primary" : "bg-card text-muted-foreground border-border hover:text-foreground"
+                        )}>{tp}</button>
+                      );
+                    })}
+                  </div>
                 </FilterGroup>
-                <FilterGroup label={t("sch.f.sort")}>
-                  <ChipRow options={SORT_OPTIONS.map((o) => ({ id: o.id, label: o.label }))} value={sort} onChange={(v) => setSort(v as any)} />
-                </FilterGroup>
+                {profile && (
+                  <div className="flex items-center justify-between rounded-2xl border border-border bg-secondary/40 px-3 py-2.5">
+                    <span className="text-sm">{t("sch.f.eligibleOnly")}</span>
+                    <Switch checked={eligibleOnly} onCheckedChange={setEligibleOnly} />
+                  </div>
+                )}
               </div>
               <SheetFooter className="flex-row gap-2 sm:flex-row">
                 <Button variant="outline" className="flex-1 rounded-xl" onClick={resetFilters}>{t("sch.f.clear")}</Button>
@@ -150,12 +128,11 @@ export default function Scholarships() {
 
         {activeFilterCount > 0 && (
           <div className="flex items-center gap-1.5 flex-wrap">
-            {tag !== "Alla" && <ActiveChip label={tag} onRemove={() => setTag("Alla")} />}
-            {deadlineFilter !== "all" && <ActiveChip label={DEADLINE_OPTIONS.find((d) => d.id === deadlineFilter)!.label} onRemove={() => setDeadlineFilter("all")} />}
-            {amountFilter !== "all" && <ActiveChip label={AMOUNT_OPTIONS.find((a) => a.id === amountFilter)!.label} onRemove={() => setAmountFilter("all")} />}
-            {universityFilter !== "Alla" && <ActiveChip label={universityFilter} onRemove={() => setUniversityFilter("Alla")} />}
-            {locationFilter !== "Alla" && <ActiveChip label={locationFilter} onRemove={() => setLocationFilter("Alla")} />}
-            {purposeFilter !== "Alla" && <ActiveChip label={purposeFilter} onRemove={() => setPurposeFilter("Alla")} />}
+            {field && <ActiveChip label={field} onRemove={() => setField("")} />}
+            {uni && <ActiveChip label={uni} onRemove={() => setUni("")} />}
+            {loc && <ActiveChip label={loc} onRemove={() => setLoc("")} />}
+            {types.map((tp) => <ActiveChip key={tp} label={tp} onRemove={() => setTypes((c) => c.filter((x) => x !== tp))} />)}
+            {eligibleOnly && <ActiveChip label={t("sch.eligible")} onRemove={() => setEligibleOnly(false)} />}
             <button onClick={resetFilters} className="text-[11px] font-semibold text-primary px-2 py-1">{t("sch.f.clear")}</button>
           </div>
         )}
@@ -166,30 +143,34 @@ export default function Scholarships() {
             <button onClick={resetFilters} className="mt-2 text-sm font-semibold text-primary">{t("sch.f.clear")}</button>
           </div>
         ) : (
-          <div className="space-y-2.5">{filtered.map((s) => <BrowseCard key={s.id} scholarship={s} />)}</div>
+          <div className="space-y-2.5">{filtered.map((s) => <BrowseCard key={s.id} scholarship={s} profile={profile} />)}</div>
         )}
       </div>
     </AppScreen>
   );
 }
 
-function BrowseCard({ scholarship: s }: { scholarship: Scholarship }) {
+function BrowseCard({ scholarship: s, profile }: { scholarship: Scholarship; profile: ReturnType<typeof loadProfile> }) {
   const t = useT();
   const deadline = new Date(s.deadline).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+  const eligible = profile ? checkEligibility(profile, s).eligible : null;
   return (
     <div className="block p-4 bg-card rounded-2xl border border-border/70 shadow-soft">
-      <h3 className="font-semibold text-[15px] leading-snug">{s.name}</h3>
+      <div className="flex items-start justify-between gap-2">
+        <h3 className="font-semibold text-[15px] leading-snug">{s.name}</h3>
+        {eligible !== null && <EligibilityBadge eligible={eligible} />}
+      </div>
       <p className="text-[12px] text-muted-foreground flex items-center gap-1 mt-0.5">
         <Building2 className="h-3 w-3" /> {s.organization}
       </p>
-      <div className="mt-2.5 flex items-center gap-3 text-xs">
+      <div className="mt-2.5 flex items-center gap-3 text-xs flex-wrap">
         <span className="flex items-center gap-1 font-semibold text-foreground">
-          <Coins className="h-3.5 w-3.5 text-primary" />
-          {s.amount.toLocaleString("sv-SE")} kr
+          <Coins className="h-3.5 w-3.5 text-primary" />{s.amount.toLocaleString("sv-SE")} kr
         </span>
         <span className="flex items-center gap-1 text-muted-foreground">
           <Calendar className="h-3.5 w-3.5" />{deadline}
         </span>
+        <ApplicationStatusBadge scholarship={s} />
       </div>
       <div className="mt-2.5 flex flex-wrap gap-1">
         {s.tags.slice(0, 3).map((tg) => (
@@ -211,7 +192,6 @@ function FilterGroup({ label, children }: { label: string; children: React.React
     </div>
   );
 }
-
 function ChipRow({ options, value, onChange }: { options: { id: string; label: string }[]; value: string; onChange: (v: string) => void }) {
   return (
     <div className="flex gap-1.5 flex-wrap">
@@ -219,19 +199,16 @@ function ChipRow({ options, value, onChange }: { options: { id: string; label: s
         <button key={o.id} onClick={() => onChange(o.id)} className={cn(
           "px-3 py-1.5 rounded-full text-xs font-medium border transition-colors",
           value === o.id ? "bg-primary text-primary-foreground border-primary" : "bg-card text-muted-foreground border-border hover:text-foreground"
-        )}>
-          {o.label}
-        </button>
+        )}>{o.label}</button>
       ))}
     </div>
   );
 }
-
 function ActiveChip({ label, onRemove }: { label: string; onRemove: () => void }) {
   return (
     <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary-soft text-primary text-[11px] font-semibold">
       {label}
-      <button onClick={onRemove} aria-label="Ta bort" className="hover:opacity-70"><X className="h-3 w-3" /></button>
+      <button onClick={onRemove} aria-label="x" className="hover:opacity-70"><X className="h-3 w-3" /></button>
     </span>
   );
 }

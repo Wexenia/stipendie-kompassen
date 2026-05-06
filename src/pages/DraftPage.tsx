@@ -1,13 +1,13 @@
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useParams } from "react-router-dom";
 import { SCHOLARSHIPS } from "@/data/scholarships";
-import { loadDrafts, loadProfile, saveDraft, setApplicationStatus } from "@/lib/storage";
-import { matchScholarship } from "@/lib/matching";
+import { loadDrafts, loadProfile, saveDraft } from "@/lib/storage";
+import { checkEligibility } from "@/lib/eligibility";
 import { generateDraft } from "@/lib/draft";
 import { useState, useEffect } from "react";
 import AppScreen from "@/components/layout/AppScreen";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Copy, RotateCw, Save, AlertTriangle, FileText, Send } from "lucide-react";
+import { Copy, RotateCw, Save, AlertTriangle, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { useT } from "@/lib/i18n";
 
@@ -28,8 +28,16 @@ export default function DraftPage() {
     } else if (profile) {
       setLoading(true);
       const tt = setTimeout(() => {
-        const match = matchScholarship(profile, scholarship);
-        setText(generateDraft(profile, scholarship, match));
+        const elig = checkEligibility(profile, scholarship);
+        const generated = generateDraft(profile, scholarship, elig);
+        setText(generated);
+        // Auto-save as draft on first generation
+        saveDraft({
+          scholarshipId: scholarship.id,
+          scholarshipName: scholarship.name,
+          text: generated,
+          updatedAt: new Date().toISOString(),
+        });
         setLoading(false);
       }, 400);
       return () => clearTimeout(tt);
@@ -59,8 +67,10 @@ export default function DraftPage() {
   const regenerate = () => {
     setLoading(true);
     setTimeout(() => {
-      const match = matchScholarship(profile, scholarship);
-      setText(generateDraft(profile, scholarship, match));
+      const elig = checkEligibility(profile, scholarship);
+      const generated = generateDraft(profile, scholarship, elig);
+      setText(generated);
+      saveDraft({ scholarshipId: scholarship.id, scholarshipName: scholarship.name, text: generated, updatedAt: new Date().toISOString() });
       setLoading(false);
       toast.success(t("draft.regenerated"));
     }, 300);
@@ -69,17 +79,9 @@ export default function DraftPage() {
   const copy = async () => { await navigator.clipboard.writeText(text); toast.success(t("draft.copied")); };
 
   const save = () => {
-    saveDraft({
-      scholarshipId: scholarship.id,
-      scholarshipName: scholarship.name,
-      text,
-      updatedAt: new Date().toISOString(),
-    });
+    saveDraft({ scholarshipId: scholarship.id, scholarshipName: scholarship.name, text, updatedAt: new Date().toISOString() });
     toast.success(t("draft.saved"));
   };
-
-  const markStarted = () => { save(); setApplicationStatus(scholarship.id, "paborjad"); toast.success(t("app.markStarted")); };
-  const markSent = () => { save(); setApplicationStatus(scholarship.id, "skickad"); toast.success(t("app.markSent")); };
 
   return (
     <AppScreen title={t("draft.title")} subtitle={scholarship.name} back>
@@ -107,11 +109,6 @@ export default function DraftPage() {
           <Button onClick={save} className="rounded-xl h-11 text-xs"><Save className="h-3.5 w-3.5 mr-1" /> {t("draft.save")}</Button>
           <Button variant="outline" onClick={copy} className="rounded-xl h-11 text-xs"><Copy className="h-3.5 w-3.5 mr-1" /> {t("draft.copy")}</Button>
           <Button variant="outline" onClick={regenerate} className="rounded-xl h-11 text-xs"><RotateCw className="h-3.5 w-3.5 mr-1" /> {t("draft.regenerate")}</Button>
-        </div>
-
-        <div className="grid grid-cols-2 gap-2">
-          <Button variant="outline" onClick={markStarted} className="rounded-xl h-10 text-xs">{t("app.markStarted")}</Button>
-          <Button variant="outline" onClick={markSent} className="rounded-xl h-10 text-xs gap-1"><Send className="h-3.5 w-3.5" /> {t("app.markSent")}</Button>
         </div>
       </div>
     </AppScreen>
