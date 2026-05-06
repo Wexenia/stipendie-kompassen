@@ -11,6 +11,7 @@ import ScholarshipDetail from "./pages/ScholarshipDetail";
 import DraftPage from "./pages/DraftPage";
 import Drafts from "./pages/Drafts";
 import Matches from "./pages/Matches";
+import Saved from "./pages/Saved";
 import FAQ from "./pages/FAQ";
 import SettingsPage from "./pages/Settings";
 import NotFound from "./pages/NotFound.tsx";
@@ -30,6 +31,8 @@ const App = () => (
             <Route path="/stipendier" element={<Scholarships />} />
             <Route path="/stipendier/:id" element={<ScholarshipDetail />} />
             <Route path="/matchningar" element={<Matches />} />
+            <Route path="/sparade" element={<Saved />} />
+            <Route path="/utkast" element={<Drafts />} />
             <Route path="/ansokningar" element={<Drafts />} />
             <Route path="/utkast/:id" element={<DraftPage />} />
             <Route path="/faq" element={<FAQ />} />

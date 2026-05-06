@@ -208,8 +208,11 @@ function ProfileWizard({ initial, initialStep, onCancel, onSaved }: { initial: S
         </button>
       }
     >
-      <div className="space-y-4">
+      <div className="space-y-5">
         <Progress value={progress} className="h-1.5" />
+        <div className="rounded-2xl bg-primary-soft/70 border border-primary/15 p-3 text-[12px] text-foreground/80 leading-relaxed">
+          {t("profile.aiInfo")}
+        </div>
 
         <div className="space-y-3.5">
           {step === 0 && (
