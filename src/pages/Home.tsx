@@ -1,25 +1,26 @@
 import { Link, useNavigate } from "react-router-dom";
-import { useEffect, useMemo, useState } from "react";
-import { loadDrafts, loadProfile } from "@/lib/storage";
+import { useEffect, useState } from "react";
+import { loadDrafts, loadProfile, loadSavedIds } from "@/lib/storage";
 import { isProfileComplete, profileCompleteness, StudentProfile, SavedApplication } from "@/types/profile";
 import { Progress } from "@/components/ui/progress";
 import { Button } from "@/components/ui/button";
 import {
-  Sparkles, FileText, GraduationCap, Wallet, Plane, BookOpen, ChevronRight, HelpCircle, UserPlus, Send, FolderOpen,
+  Sparkles, FileText, GraduationCap, Wallet, Plane, BookOpen, ChevronRight, HelpCircle, UserPlus, Send, Bookmark,
 } from "lucide-react";
 import { useT } from "@/lib/i18n";
-import { StatusBadge } from "@/components/StatusBadge";
 
 export default function Home() {
   const t = useT();
   const navigate = useNavigate();
   const [profile, setProfile] = useState<StudentProfile | null>(null);
   const [drafts, setDrafts] = useState<SavedApplication[]>([]);
+  const [savedCount, setSavedCount] = useState(0);
 
   useEffect(() => {
     const refresh = () => {
       setProfile(loadProfile());
       setDrafts(loadDrafts());
+      setSavedCount(loadSavedIds().length);
     };
     refresh();
     window.addEventListener("stipendia:update", refresh);
@@ -29,19 +30,13 @@ export default function Home() {
   const completeness = profileCompleteness(profile);
   const complete = isProfileComplete(profile);
 
-  const recentApps = useMemo(
-    () => [...drafts].sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()).slice(0, 4),
-    [drafts]
-  );
-
   return (
     <div className="px-4 pt-6 pb-2 space-y-5">
       <header>
-        <h1 className="text-[24px] font-bold leading-tight">{t("home.title")}</h1>
+        <h1 className="text-[26px] font-bold leading-tight">{t("home.title")}</h1>
         <p className="text-[13px] text-muted-foreground mt-2 leading-relaxed">{t("home.intro")}</p>
       </header>
 
-      {/* Profile / CTA card */}
       <div className="rounded-3xl bg-warm-gradient text-primary-foreground p-4 shadow-glow">
         {complete ? (
           <>
@@ -86,7 +81,6 @@ export default function Home() {
         )}
       </div>
 
-      {/* How it works */}
       <Section title={t("home.howItWorks")}>
         <ol className="space-y-2">
           <Step n={1} icon={UserPlus} title={t("home.step1.title")} desc={t("home.step1.desc")} />
@@ -95,40 +89,19 @@ export default function Home() {
         </ol>
       </Section>
 
-      {/* Application history */}
-      <Section title={t("home.history")}>
-        <div className="bg-card rounded-3xl border border-border/60 shadow-soft p-3">
-          {recentApps.length === 0 ? (
-            <div className="px-2 py-6 text-center">
-              <div className="mx-auto h-10 w-10 rounded-2xl bg-accent-soft text-accent-foreground flex items-center justify-center mb-2">
-                <FolderOpen className="h-5 w-5" />
-              </div>
-              <p className="text-xs text-muted-foreground">{t("home.historyEmpty")}</p>
-            </div>
-          ) : (
-            <ul className="divide-y divide-border/60">
-              {recentApps.map((d) => (
-                <li key={d.scholarshipId}>
-                  <Link to={`/utkast/${d.scholarshipId}`} className="flex items-center gap-2 p-2.5 rounded-xl hover:bg-secondary/60">
-                    <div className="h-9 w-9 rounded-xl bg-primary-soft text-primary flex items-center justify-center shrink-0">
-                      <FileText className="h-4 w-4" />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="font-semibold text-sm truncate">{d.scholarshipName}</p>
-                      <p className="text-[11px] text-muted-foreground">
-                        {t("app.created")}: {new Date(d.createdAt).toLocaleDateString()}
-                      </p>
-                    </div>
-                    <StatusBadge status={d.status} />
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      </Section>
+      <div className="grid grid-cols-2 gap-2">
+        <Link to="/sparade" className="p-4 bg-card rounded-2xl border border-border/60 shadow-soft">
+          <span className="h-10 w-10 rounded-xl bg-accent-soft text-accent-foreground flex items-center justify-center"><Bookmark className="h-5 w-5" /></span>
+          <p className="font-semibold text-sm mt-2">{t("home.savedTitle")}</p>
+          <p className="text-[11px] text-muted-foreground">{t("home.savedSub", { n: savedCount })}</p>
+        </Link>
+        <Link to="/utkast" className="p-4 bg-card rounded-2xl border border-border/60 shadow-soft">
+          <span className="h-10 w-10 rounded-xl bg-primary-soft text-primary flex items-center justify-center"><FileText className="h-5 w-5" /></span>
+          <p className="font-semibold text-sm mt-2">{t("home.draftsTitle")}</p>
+          <p className="text-[11px] text-muted-foreground">{t("home.draftsSub", { n: drafts.length })}</p>
+        </Link>
+      </div>
 
-      {/* Why */}
       <Section title={t("home.why")}>
         <div className="grid grid-cols-1 gap-2">
           <Why icon={Wallet} title={t("home.why1.t")} desc={t("home.why1.d")} />
@@ -156,7 +129,7 @@ export default function Home() {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section>
-      <h2 className="font-semibold text-[15px] mb-2 px-0.5">{title}</h2>
+      <h2 className="font-semibold text-[17px] mb-2 px-0.5">{title}</h2>
       {children}
     </section>
   );
