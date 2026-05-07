@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { HashRouter, Route, Routes } from "react-router-dom";
+import { HashRouter, Route, Routes } from "react-router-dom"; // HashRouter is imported here
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -14,7 +14,7 @@ import Matches from "./pages/Matches";
 import Saved from "./pages/Saved";
 import FAQ from "./pages/FAQ";
 import SettingsPage from "./pages/Settings";
-import NotFound from "./pages/NotFound.tsx";
+import NotFound from "./pages/NotFound"; // Removed .tsx extension (best practice)
 
 const queryClient = new QueryClient();
 
@@ -23,7 +23,8 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
-      <BrowserRouter>
+      {/* FIX: Changed opening tag to HashRouter to match the closing tag */}
+      <HashRouter>
         <Layout>
           <Routes>
             <Route path="/" element={<Home />} />
