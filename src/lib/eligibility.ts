@@ -1,10 +1,17 @@
 import { Scholarship } from "@/data/scholarships";
-import { StudentProfile } from "@/types/profile";
+import { StudentProfile, SYFTE_OPTIONS } from "@/types/profile";
 import { ScholarshipType } from "@/types/profile";
 
 const norm = (s: string) => s.trim().toLowerCase();
 const hasOverlap = (val: string, list: string[]) =>
   list.some((l) => norm(val).includes(norm(l)) || norm(l).includes(norm(val)));
+const criteriaText = (s: Scholarship) => norm(s.criteria.join(" "));
+const hasEconomicNeed = (profile: StudentProfile) => {
+  const economy = norm(profile.ekonomi);
+  return economy.includes("begränsad") || economy.includes("svårt") || economy.includes("täcka levnadsomkostnader");
+};
+const purposeTags = (profile: StudentProfile) =>
+  SYFTE_OPTIONS.find((option) => option.value === profile.syfte)?.tags ?? [];
 
 export interface EligibilityResult {
   eligible: boolean;
@@ -44,6 +51,34 @@ export function checkEligibility(profile: StudentProfile, s: Scholarship): Eligi
     reasons.push(`Studieort matchar (${s.eligibleLocations.join(", ")})`);
   } else {
     blockers.push(`Studieort bör vara: ${s.eligibleLocations.join(", ")}`);
+  }
+
+  if (s.needBased) {
+    if (hasEconomicNeed(profile)) {
+      reasons.push("Din ekonomiska situation matchar behovsprövade stipendier");
+    } else {
+      blockers.push("Stipendiet är behovsprövat och kräver begränsad ekonomi");
+    }
+  }
+
+  if (s.engagementRequired) {
+    if (profile.engagemang.trim().length > 0) {
+      reasons.push("Du har angett föreningsengagemang eller ideellt arbete");
+    } else {
+      blockers.push("Stipendiet kräver föreningsengagemang eller ideellt arbete");
+    }
+  }
+
+  if (criteriaText(s).includes("identifierar sig som kvinna")) {
+    if (profile.kon === "Kvinna") {
+      reasons.push("Du matchar stipendiets könskriterium");
+    } else {
+      blockers.push("Stipendiet riktar sig till sökande som identifierar sig som kvinna");
+    }
+  }
+
+  if (s.purposes && s.purposes.length > 0 && purposeTags(profile).some((tag) => hasOverlap(tag, s.purposes ?? []))) {
+    reasons.push("Ditt syfte med stipendiet matchar ändamålet");
   }
 
   return { eligible: blockers.length === 0, reasons, blockers };

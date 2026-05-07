@@ -1,4 +1,6 @@
-import { StudentProfile, SavedApplication, ApplicationStatus } from "@/types/profile";
+import { StudentProfile, SavedApplication, ApplicationStatus, DOC_TYPES } from "@/types/profile";
+
+type StoredUpload = { documentType?: unknown };
 
 const KEYS = {
   profile: "stipendia.profile",
@@ -24,9 +26,18 @@ export function loadProfile(): StudentProfile | null {
     // migrate old ekonomiKommentar -> omDig
     if (p.ekonomiKommentar && !p.omDig) p.omDig = p.ekonomiKommentar;
     delete p.ekonomiKommentar;
-    if (p.dokument) delete p.dokument.studieintyg;
-    if (Array.isArray(p.uploads)) {
-      p.uploads = p.uploads.filter((u: any) => u.documentType !== "studieintyg");
+    if (!Array.isArray(p.uploads)) p.uploads = [];
+    if (p.dokument && typeof p.dokument === "object") {
+      const existingTypes = new Set((p.uploads as StoredUpload[]).map((u) => u.documentType));
+      DOC_TYPES.forEach(({ k, label }) => {
+        if (p.dokument[k] && !existingTypes.has(k)) {
+          p.uploads.push({
+            documentType: k,
+            fileName: `${label} tillagt`,
+            uploadDate: new Date().toISOString(),
+          });
+        }
+      });
     }
     return p;
   } catch { return null; }

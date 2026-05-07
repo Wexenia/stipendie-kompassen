@@ -8,6 +8,9 @@ import { Building2, Calendar, ExternalLink, FileText, CheckCircle2, AlertCircle,
 import { useEffect, useState } from "react";
 import { useT } from "@/lib/i18n";
 import { EligibilityBadge, ApplicationStatusBadge } from "@/components/StatusBadge";
+import { DOC_TYPES } from "@/types/profile";
+
+const documentLabelToType = new Map(DOC_TYPES.map(({ k, label }) => [label, k]));
 
 export default function ScholarshipDetail() {
   const t = useT();
@@ -26,10 +29,8 @@ export default function ScholarshipDetail() {
   }
 
   const elig = profile ? checkEligibility(profile, s) : null;
-  const ownedDocs = profile?.dokument;
-  const docKeyMap: Record<string, "cv" | "personligtBrev" | "rekommendationsbrev"> = {
-    "CV": "cv", "Personligt brev": "personligtBrev", "Rekommendationsbrev": "rekommendationsbrev",
-  };
+  const uploadedDocTypes = new Set((profile?.uploads ?? []).map((u) => u.documentType));
+  const legacyDocs = profile?.dokument;
   const deadline = new Date(s.deadline).toLocaleDateString(undefined, { day: "numeric", month: "long", year: "numeric" });
 
   return (
@@ -113,8 +114,8 @@ export default function ScholarshipDetail() {
         <Section title={t("sch.checklist")}>
           <div className="space-y-1.5">
             {s.requiredDocuments.map((d) => {
-              const key = docKeyMap[d];
-              const owned = key && ownedDocs ? (ownedDocs as any)[key] : false;
+              const key = documentLabelToType.get(d);
+              const owned = Boolean(key && (uploadedDocTypes.has(key) || legacyDocs?.[key]));
               return (
                 <div key={d} className="flex items-center justify-between rounded-xl bg-secondary/60 px-3 py-2.5">
                   <span className="text-sm font-medium">{d}</span>

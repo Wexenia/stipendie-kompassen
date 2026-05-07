@@ -22,6 +22,7 @@ export interface StudentProfile {
   syfte: string;
   syfteAnnan?: string;
   dokument?: {
+    studieintyg?: boolean;
     cv?: boolean;
     personligtBrev?: boolean;
     rekommendationsbrev?: boolean;
@@ -45,7 +46,7 @@ export const EMPTY_PROFILE: StudentProfile = {
   intressen: "",
   syfte: "",
   syfteAnnan: "",
-  dokument: { cv: false, personligtBrev: false, rekommendationsbrev: false },
+  dokument: { studieintyg: false, cv: false, personligtBrev: false, rekommendationsbrev: false },
   uploads: [],
 };
 
@@ -159,6 +160,7 @@ export const EKONOMI_OPTIONS = [
 ] as const;
 
 export const DOC_TYPES = [
+  { k: "studieintyg", label: "Studieintyg" },
   { k: "cv", label: "CV" },
   { k: "personligtBrev", label: "Personligt brev" },
   { k: "rekommendationsbrev", label: "Rekommendationsbrev" },
