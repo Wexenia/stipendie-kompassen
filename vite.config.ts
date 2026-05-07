@@ -3,9 +3,10 @@ import react from "@vitejs/plugin-react-swc";
 import path from "path";
 import { componentTagger } from "lovable-tagger";
 
-// https://vitejs.dev/config/
-export default defineConfig(({base: '/stipendie-kompassen/',
-  plugins: [react()],}) => ({
+
+export default defineConfig(({ mode }) => ({
+  
+  base: '/stipendie-kompassen/',
   server: {
     host: "::",
     port: 8080,
@@ -18,6 +19,5 @@ export default defineConfig(({base: '/stipendie-kompassen/',
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
-    dedupe: ["react", "react-dom", "react/jsx-runtime", "react/jsx-dev-runtime", "@tanstack/react-query", "@tanstack/query-core"],
   },
 }));
