@@ -193,7 +193,7 @@ function BrowseCard({ scholarship: s, profile }: { scholarship: Scholarship; pro
       </p>
       <div className="mt-2.5 flex items-center gap-3 text-xs flex-wrap">
         <span className="flex items-center gap-1 font-semibold text-foreground">
-          <Coins className="h-3.5 w-3.5 text-primary" />{s.amount.toLocaleString("sv-SE")} kr
+          <Coins className="h-3.5 w-3.5 text-primary" />{s.amount ? s.amount.toLocaleString("sv-SE") : "Se info"} kr
         </span>
         <span className="flex items-center gap-1 text-muted-foreground">
           <Calendar className="h-3.5 w-3.5" />{deadline}
