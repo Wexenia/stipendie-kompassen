@@ -28,11 +28,20 @@ export default function Scholarships() {
   const [open, setOpen] = useState(false);
   const [profile, setProfile] = useState(loadProfile());
 
+
+  const ITEMS_PER_PAGE = 20;
+  const [visibleCount, setVisibleCount] = useState(ITEMS_PER_PAGE);
+
   useEffect(() => {
     const r = () => setProfile(loadProfile());
     window.addEventListener("stipendia:update", r);
     return () => window.removeEventListener("stipendia:update", r);
   }, []);
+
+
+  useEffect(() => {
+    setVisibleCount(ITEMS_PER_PAGE);
+  }, [query, field, uni, loc, types, eligibleOnly,profile]);
 
   const norm = (s: string) => s.trim().toLowerCase();
   const partial = (a: string, b: string) => norm(a).includes(norm(b)) || norm(b).includes(norm(a));
@@ -57,6 +66,11 @@ export default function Scholarships() {
       return true;
     });
   }, [query, field, uni, loc, types, eligibleOnly, profile]);
+
+
+  const paginatedScholarships = useMemo(() => {
+    return filtered.slice(0, visibleCount);
+  }, [filtered, visibleCount]);
 
   const activeFilterCount =
     (field ? 1 : 0) + (uni ? 1 : 0) + (loc ? 1 : 0) + (types.length > 0 ? 1 : 0) + (eligibleOnly ? 1 : 0);
@@ -143,7 +157,21 @@ export default function Scholarships() {
             <button onClick={resetFilters} className="mt-2 text-sm font-semibold text-primary">{t("sch.f.clear")}</button>
           </div>
         ) : (
-          <div className="space-y-2.5">{filtered.map((s) => <BrowseCard key={s.id} scholarship={s} profile={profile} />)}</div>
+          <div className="space-y-2.5 pb-10">
+            {paginatedScholarships.map((s) => (
+              <BrowseCard key={s.id} scholarship={s} profile={profile} />
+            ))}
+
+            {visibleCount < filtered.length && (
+              <Button 
+                variant="outline" 
+                className="w-full py-6 mt-4 border-dashed rounded-2xl text-muted-foreground hover:bg-secondary/40"
+                onClick={() => setVisibleCount(prev => prev + ITEMS_PER_PAGE)}
+              >
+                Visa fler stiftelser ({filtered.length - visibleCount} kvar)
+              </Button>
+            )}
+          </div>
         )}
       </div>
     </AppScreen>
