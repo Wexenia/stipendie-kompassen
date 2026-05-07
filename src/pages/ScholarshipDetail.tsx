@@ -50,7 +50,7 @@ export default function ScholarshipDetail() {
           <div className="mt-3 flex items-end justify-between gap-2">
             <div>
               <p className="text-[10px] opacity-80 uppercase font-semibold">{t("sch.amount")}</p>
-              <p className="text-2xl font-bold leading-none">{s.amount.toLocaleString("sv-SE")} kr</p>
+              <p className="text-2xl font-bold leading-none">{s.amount ? s.amount.toLocaleString("sv-SE") : "—"} kr</p>
             </div>
             {elig && <EligibilityBadge eligible={elig.eligible} className="text-xs" />}
           </div>
@@ -72,7 +72,7 @@ export default function ScholarshipDetail() {
         </div>
 
         <div className="flex flex-wrap gap-1.5">
-          {s.tags.map((tg) => <span key={tg} className="text-[11px] font-medium px-2.5 py-1 rounded-full bg-secondary text-muted-foreground">{tg}</span>)}
+          {s.tags?.map((tg) => <span key={tg} className="text-[11px] font-medium px-2.5 py-1 rounded-full bg-secondary text-muted-foreground">{tg}</span>)}
         </div>
 
         <Section title={t("sch.description")}>
@@ -81,7 +81,7 @@ export default function ScholarshipDetail() {
 
         <Section title={t("sch.criteria")}>
           <ul className="space-y-1.5">
-            {s.criteria.map((c) => (
+            {s.criteria?.map((c) => (
               <li key={c} className="flex gap-2 text-sm">
                 <CheckCircle2 className="h-4 w-4 text-primary shrink-0 mt-0.5" />
                 <span className="text-foreground/85">{c}</span>
@@ -113,7 +113,7 @@ export default function ScholarshipDetail() {
 
         <Section title={t("sch.checklist")}>
           <div className="space-y-1.5">
-            {s.requiredDocuments.map((d) => {
+            {s.requiredDocuments?.map((d) => {
               const key = documentLabelToType.get(d);
               const owned = Boolean(key && (uploadedDocTypes.has(key) || legacyDocs?.[key]));
               return (
