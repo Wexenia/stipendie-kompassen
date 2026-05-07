@@ -6,7 +6,7 @@ import { componentTagger } from "lovable-tagger";
 
 export default defineConfig(({ mode }) => ({
   
-  base: '/stipendie-kompassen/',
+  base: '/wexenia/',
   server: {
     host: "::",
     port: 8080,
